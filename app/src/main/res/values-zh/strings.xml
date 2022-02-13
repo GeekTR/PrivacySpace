@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">隐秘空间</string>
+    <string name="menu">菜单</string>
+    <string name="set_white_list">设置白名单</string>
+    <string name="display_system_apps">显示系统App</string>
+    <string name="add_hidden_apps">添加隐藏的App</string>
+    <string name="reboot_desktop">重启桌面</string>
+    <string name="reboot_system">重启系统</string>
+    <string name="loading">加载中...</string>
+</resources>

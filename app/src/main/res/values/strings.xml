@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">PrivacySpace</string>
+    <string name="menu">Menu</string>
+    <string name="set_white_list">Set Whitelist</string>
+    <string name="display_system_apps">Show System APPs</string>
+    <string name="add_hidden_apps">Add Hidden APPs</string>
+    <string name="reboot_desktop">Restart Desktop</string>
+    <string name="reboot_system">Restart System</string>
+    <string name="loading">Loading…</string>
+</resources>
