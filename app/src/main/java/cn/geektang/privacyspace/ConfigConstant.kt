@@ -3,8 +3,11 @@ package cn.geektang.privacyspace
 object ConfigConstant {
     const val ANDROID_FRAMEWORK = "android"
     const val CONFIG_FILE_FOLDER = "/data/system/privacy_space/"
+    @Deprecated(message = "Moved to $CONFIG_FILE_JSON")
     const val CONFIG_FILE_APP_LIST = "app.list"
+    @Deprecated(message = "Moved to $CONFIG_FILE_JSON")
     const val CONFIG_FILE_WHITELIST = "whitelist"
+    const val CONFIG_FILE_JSON = "config.json"
 
     val defaultWhitelist = setOf(
         "com.android.systemui",

@@ -8,6 +8,6 @@ class AppInfo(
     val packageName: String,
     val appIcon: Drawable,
     val appName: String,
-    val isSystemApp : Boolean,
+    val isSystemApp: Boolean,
     val isXposedModule: Boolean
 )

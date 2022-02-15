@@ -41,7 +41,7 @@
             android:value="true" />
         <meta-data
             android:name="xposeddescription"
-            android:value="隐藏应用列表" />
+            android:value="@string/xposeddescription" />
         <meta-data
             android:name="xposedminversion"
             android:value="53" />

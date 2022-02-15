@@ -4,15 +4,17 @@ import cn.geektang.privacyspace.ConfigConstant
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 
-class FilterAppsFromAndroidMethodHook(
-    private val shouldFilterAppList: Set<String>,
-    private val userWhitelist: Set<String>
-) : XC_MethodHook() {
+class FilterAppsFromAndroidMethodHook : XC_MethodHook() {
 
     override fun afterHookedMethod(param: MethodHookParam) {
         if (param.result == true) {
             return
         }
+        val configData = HookMain.configData
+        val shouldFilterAppList = configData.hiddenAppList
+        val userWhitelist = configData.whitelist
+        val connectedAppsInfoMap = configData.connectedApps
+        val enableLog = configData.enableLog
         val defaultWhitelist = ConfigConstant.defaultWhitelist
         val targetPackageName = param.args.getOrNull(2)?.packageName ?: return
         val callingPackageName = param.args.getOrNull(1)?.packageName ?: return
@@ -20,11 +22,18 @@ class FilterAppsFromAndroidMethodHook(
             && !defaultWhitelist.contains(callingPackageName)
             && shouldFilterAppList.contains(targetPackageName)
         ) {
-            if (!userWhitelist.contains(callingPackageName)) {
-                XposedBridge.log("已阻止${callingPackageName}获取${targetPackageName}")
+            if (!userWhitelist.contains(callingPackageName)
+                && connectedAppsInfoMap[callingPackageName]?.contains(targetPackageName) != true
+                && connectedAppsInfoMap[targetPackageName]?.contains(callingPackageName) != true
+            ) {
+                if (enableLog) {
+                    XposedBridge.log("已阻止${callingPackageName}获取${targetPackageName}")
+                }
                 param.result = true
             } else {
-                XposedBridge.log("未阻止${callingPackageName}获取${targetPackageName}")
+                if (enableLog) {
+                    XposedBridge.log("未阻止${callingPackageName}获取${targetPackageName}")
+                }
             }
         }
     }

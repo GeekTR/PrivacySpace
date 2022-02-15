@@ -2,8 +2,9 @@ package cn.geektang.privacyspace.hook
 
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
-import android.os.*
+import android.os.FileObserver
 import cn.geektang.privacyspace.ConfigConstant
+import cn.geektang.privacyspace.bean.ConfigData
 import cn.geektang.privacyspace.util.ConfigHelper
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.XC_MethodHook
@@ -11,16 +12,17 @@ import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import java.io.File
-import java.util.concurrent.CopyOnWriteArraySet
 
 class HookMain : IXposedHookLoadPackage {
 
     companion object {
         private lateinit var classLoader: ClassLoader
         private var packageName: String? = null
-        private val shouldFilterAppList = CopyOnWriteArraySet<String>()
-        private val whitelist = CopyOnWriteArraySet<String>()
         private var fileObserver: FileObserver? = null
+
+        @Volatile
+        var configData: ConfigData = ConfigData.EMPTY
+            private set
     }
 
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
@@ -43,7 +45,7 @@ class HookMain : IXposedHookLoadPackage {
             return
         }
 
-        ConfigHelper.loadAppListConfigWithSystemApp(shouldFilterAppList)
+        configData = ConfigHelper.loadConfigWithSystemApp() ?: ConfigData.EMPTY
         startWatchingConfigFiles()
         XposedHelpers.findAndHookMethod(
             packageManagerClass,
@@ -52,6 +54,7 @@ class HookMain : IXposedHookLoadPackage {
             object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
                     super.afterHookedMethod(param)
+                    val shouldFilterAppList = configData.hiddenAppList
                     param.result = (param.result as List<*>?)?.filter {
                         !shouldFilterAppList.contains((it as PackageInfo).packageName)
                     }
@@ -65,6 +68,7 @@ class HookMain : IXposedHookLoadPackage {
             object : XC_MethodHook() {
                 override fun afterHookedMethod(param: MethodHookParam) {
                     super.afterHookedMethod(param)
+                    val shouldFilterAppList = configData.hiddenAppList
                     param.result = (param.result as List<*>?)?.filter {
                         !shouldFilterAppList.contains((it as ApplicationInfo).packageName)
                     }
@@ -87,8 +91,7 @@ class HookMain : IXposedHookLoadPackage {
             return
         }
 
-        ConfigHelper.loadAppListConfigWithSystemApp(shouldFilterAppList)
-        ConfigHelper.loadWhitelistConfigWithSystemApp(whitelist)
+        configData = ConfigHelper.loadConfigWithSystemApp() ?: ConfigData.EMPTY
         startWatchingConfigFiles()
         XposedHelpers.findAndHookMethod(
             appsFilerClass,
@@ -97,7 +100,7 @@ class HookMain : IXposedHookLoadPackage {
             settingBaseClass,
             packageSettingClass,
             Int::class.javaPrimitiveType,
-            FilterAppsFromAndroidMethodHook(shouldFilterAppList, whitelist)
+            FilterAppsFromAndroidMethodHook()
         )
     }
 
@@ -106,12 +109,15 @@ class HookMain : IXposedHookLoadPackage {
             fileObserver =
                 object : FileObserver(File(ConfigConstant.CONFIG_FILE_FOLDER)) {
                     override fun onEvent(event: Int, path: String?) {
-                        if (event == CLOSE_WRITE && path == ConfigConstant.CONFIG_FILE_APP_LIST) {
-                            ConfigHelper.loadAppListConfigWithSystemApp(shouldFilterAppList)
-                            XposedBridge.log("$packageName 重载filterAppList")
-                        } else if (packageName == ConfigConstant.ANDROID_FRAMEWORK && event == CLOSE_WRITE && path == ConfigConstant.CONFIG_FILE_WHITELIST) {
-                            ConfigHelper.loadWhitelistConfigWithSystemApp(whitelist)
-                            XposedBridge.log("$packageName 重载whitelist")
+                        if (event == CLOSE_WRITE && path == ConfigConstant.CONFIG_FILE_JSON) {
+                            val newConfigData =
+                                ConfigHelper.loadConfigWithSystemApp() ?: ConfigData.EMPTY
+                            if (newConfigData != configData) {
+                                configData = newConfigData
+                                if (configData.enableLog) {
+                                    XposedBridge.log("$packageName 重载config.json")
+                                }
+                            }
                         }
                     }
                 }

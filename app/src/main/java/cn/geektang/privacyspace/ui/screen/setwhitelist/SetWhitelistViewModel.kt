@@ -10,6 +10,7 @@ import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.setDifferentValue
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class SetWhitelistViewModel(private val context: Application) : AndroidViewModel(context) {
@@ -22,25 +23,19 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
     init {
         viewModelScope.launch {
             launch {
-                val defaultWhitelist = ConfigConstant.defaultWhitelist
-                allAppListFlow.value =
-                    context.loadAllAppList()
-                        .filter {
-                            !defaultWhitelist.contains(it.packageName)
-                        }
-                        .sortApps(context = context, toTopCollections = whitelistFlow.value)
-                updateAppInfoListFlow()
+                ConfigHelper.configDataFlow.collect {
+                    whitelistFlow.value = ConfigHelper.configDataFlow.value.whitelist.toSet()
+                }
             }
-            launch {
-                val whiteList = mutableSetOf<String>()
-                ConfigHelper.loadWhitelistConfig(whiteList)
-                whitelistFlow.value = whiteList
-                allAppListFlow.value = appListFlow.value.sortApps(
-                    context = context,
-                    toTopCollections = whitelistFlow.value
-                )
-                updateAppInfoListFlow()
-            }
+
+            val defaultWhitelist = ConfigConstant.defaultWhitelist
+            allAppListFlow.value =
+                context.loadAllAppList()
+                    .filter {
+                        !defaultWhitelist.contains(it.packageName)
+                    }
+                    .sortApps(context = context, toTopCollections = whitelistFlow.value)
+            updateAppInfoListFlow()
         }
     }
 
@@ -71,7 +66,7 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
 
     fun tryUpdateConfig() {
         if (isModified) {
-            ConfigHelper.updateWhitelistConfig(context, whitelistFlow.value)
+            ConfigHelper.updateWhitelist(context, whitelistFlow.value)
             isModified = false
         }
     }

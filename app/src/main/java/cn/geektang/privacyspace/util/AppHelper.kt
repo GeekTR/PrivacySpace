@@ -15,11 +15,8 @@ import kotlinx.coroutines.withContext
 object AppHelper {
     suspend fun Context.loadAllAppList(): List<AppInfo> {
         return withContext(Dispatchers.IO) {
-            val flag = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            val flag =
                 PackageManager.MATCH_UNINSTALLED_PACKAGES
-            } else {
-                PackageManager.GET_UNINSTALLED_PACKAGES
-            }
             val packageManager = packageManager
             return@withContext packageManager
                 .getInstalledApplications(flag)
@@ -91,5 +88,26 @@ object AppHelper {
         } else {
             res.activityInfo.packageName
         }
+    }
+
+    fun getXposedModuleScopeList(context: Context, app: ApplicationInfo): List<String> {
+        val pm = context.packageManager
+        val scopeList = mutableListOf<String>()
+        try {
+            val scopeListResourceId: Int = app.metaData.getInt("xposedscope")
+            if (scopeListResourceId != 0) {
+                scopeList.addAll(
+                    pm.getResourcesForApplication(app).getStringArray(scopeListResourceId)
+                )
+            } else {
+                val scopeListString: String? = app.metaData.getString("xposedscope")
+                if (scopeListString != null) {
+                    scopeList.addAll(scopeListString.split(";"))
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return scopeList
     }
 }
