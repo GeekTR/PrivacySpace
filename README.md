@@ -27,6 +27,8 @@ They will coming soon in future.
 
 - [x] Fixed the bug that some mobile phones crashed directly without root permission. \ 修复部分手机无Root权限直接闪退的问题
 
+- [ ] Remove the dependency on root permissions. \ 移除对Root权限的依赖
+
 - [ ] Install Xposed module to automatically hide (user optional). \ 安装Xposed模块自动隐藏（用户可选）
 
 - [ ] When the Xposed module is hidden, the user can choose whether to add its recommended app as its "Connected App".隐藏Xposed模块时由用户自行选择是否加入其推荐APP为其关联应用
