@@ -22,4 +22,9 @@
     <string name="view_update_info_github">查看更新信息（github）</string>
     <string name="Coolapk_not_found">似乎没有安装酷安app</string>
     <string name="xposeddescription">将App\"移动\"到另一个空间</string>
+    <string name="retry">重试</string>
+    <string name="please_grant_root_permission">请授予Root权限</string>
+    <string name="back">返回</string>
+    <string name="search">搜索...</string>
+    <string name="clear">清空</string>
 </resources>

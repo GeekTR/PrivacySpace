@@ -24,7 +24,17 @@ object ConfigHelper {
     val loadingStatusFlow = MutableStateFlow(LOADING_STATUS_INIT)
     val configDataFlow = MutableStateFlow(ConfigData.EMPTY)
 
+    @Volatile
+    private var root: Boolean = false
+
+    fun markIsRoot() {
+        root = true
+    }
+
     fun initConfig(context: Context) {
+        if (!root) {
+            return
+        }
         scope.launch {
             loadingStatusFlow.value = LOADING_STATUS_LOADING
             var configData = loadConfig()
@@ -54,8 +64,8 @@ object ConfigHelper {
                     removeOldConfigFiles()
                     configData = ConfigData(
                         enableLog = BuildConfig.DEBUG,
-                        hiddenAppList = hiddenAppList.toList(),
-                        whitelist = whitelist.toList(),
+                        hiddenAppList = hiddenAppList,
+                        whitelist = whitelist,
                         connectedApps = connectedApps
                     )
                     updateConfigFileInner(context, configData)
@@ -172,7 +182,7 @@ object ConfigHelper {
         connectedAppsNew: Map<String, Set<String>>
     ) {
         val newConfigData = configDataFlow.value.copy(
-            hiddenAppList = hiddenAppListNew.toList(),
+            hiddenAppList = hiddenAppListNew,
             connectedApps = connectedAppsNew.toMutableMap()
         )
         configDataFlow.value = newConfigData
@@ -183,7 +193,7 @@ object ConfigHelper {
 
     fun updateWhitelist(context: Context, whitelistNew: Set<String>) {
         val newConfigData = configDataFlow.value.copy(
-            whitelist = whitelistNew.toList()
+            whitelist = whitelistNew
         )
         configDataFlow.value = newConfigData
         scope.launch {

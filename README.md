@@ -21,11 +21,11 @@ Similar to MIUI's "Second space", you can "move" some apps to the "Privacy Space
 
 They will coming soon in future.
 
-- [ ] Add the search function on the app list page. / 应用列表页面新增搜索功能
+- [x] Add the search function on the app list page. / 应用列表页面新增搜索功能
 
-- [ ] Compatible with Android Pie and below Android version. / 兼容Android9以及以下Android版本
+- [x] Adapt to Android version 8-10. / 适配Android 8-10
 
-- [ ] Fixed the bug that some mobile phones crashed directly without root permission. \ 修复部分手机无Root权限直接闪退的问题
+- [x] Fixed the bug that some mobile phones crashed directly without root permission. \ 修复部分手机无Root权限直接闪退的问题
 
 - [ ] Install Xposed module to automatically hide (user optional). \ 安装Xposed模块自动隐藏（用户可选）
 

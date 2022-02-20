@@ -24,6 +24,7 @@ fun SetWhitelistScreen(viewModel: SetWhitelistViewModel = viewModel()) {
     val appList by viewModel.appListFlow.collectAsState()
     val whitelist by viewModel.whitelistFlow.collectAsState()
     val showSystemApps by viewModel.showSystemAppsFlow.collectAsState()
+    val searchText by viewModel.searchTextFlow.collectAsState()
     val actions = object : SetWhitelistActions {
         override fun addApp2Whitelist(appInfo: AppInfo) {
             viewModel.addApp2Whitelist(appInfo)
@@ -36,8 +37,12 @@ fun SetWhitelistScreen(viewModel: SetWhitelistViewModel = viewModel()) {
         override fun setSystemAppsVisible(showSystemApps: Boolean) {
             viewModel.setSystemAppsVisible(showSystemApps)
         }
+
+        override fun onSearchTextChange(searchText: String) {
+            viewModel.updateSearchText(searchText)
+        }
     }
-    SetWhiteListContent(appList, whitelist, showSystemApps, actions)
+    SetWhiteListContent(appList, whitelist, searchText, showSystemApps, actions)
     OnLifecycleEvent(onEvent = { event ->
         if (event == Lifecycle.Event.ON_PAUSE
             || event == Lifecycle.Event.ON_STOP
@@ -52,6 +57,7 @@ fun SetWhitelistScreen(viewModel: SetWhitelistViewModel = viewModel()) {
 private fun SetWhiteListContent(
     appList: List<AppInfo>,
     whitelist: Set<String>,
+    searchText: String,
     showSystemApps: Boolean,
     actions: SetWhitelistActions
 ) {
@@ -67,18 +73,15 @@ private fun SetWhiteListContent(
             actions.setSystemAppsVisible(showSystemApps)
         })
     Column {
-        TopBar(stringResource(R.string.set_white_list), actions = {
-            IconButton(onClick = {
-                isPopupMenuShow.value = true
-            }) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = stringResource(R.string.menu)
-                )
-            }
-        }, onNavigationIconClick = {
-            navHostController.popBackStack()
-        })
+        SearchTopBar(
+            title = stringResource(R.string.set_white_list),
+            searchText = searchText,
+            onSearchTextChange = {
+                actions.onSearchTextChange(it)
+            }, showMorePopupState = isPopupMenuShow,
+            onNavigationIconClick = {
+                navHostController.popBackStack()
+            })
         LoadingBox(modifier = Modifier.fillMaxSize(), showLoading = appList.isEmpty()) {
             LazyColumn(content = {
                 items(appList) { appInfo ->
@@ -125,5 +128,9 @@ interface SetWhitelistActions {
     }
 
     fun setSystemAppsVisible(showSystemApps: Boolean) {
+    }
+
+    fun onSearchTextChange(searchText: String) {
+
     }
 }

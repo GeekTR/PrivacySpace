@@ -6,15 +6,15 @@ import com.squareup.moshi.JsonClass
 @JsonClass(generateAdapter = true)
 data class ConfigData(
     val enableLog: Boolean,
-    val hiddenAppList: List<String>,
-    val whitelist: List<String>,
+    val hiddenAppList: Set<String>,
+    val whitelist: Set<String>,
     val connectedApps: Map<String, Set<String>>
 ) {
     companion object {
         val EMPTY = ConfigData(
             BuildConfig.DEBUG,
-            hiddenAppList = emptyList(),
-            whitelist = emptyList(),
+            hiddenAppList = emptySet(),
+            whitelist = emptySet(),
             connectedApps = emptyMap()
         )
     }

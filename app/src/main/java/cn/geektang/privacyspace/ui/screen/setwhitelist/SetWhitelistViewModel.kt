@@ -12,12 +12,14 @@ import cn.geektang.privacyspace.util.setDifferentValue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import java.util.*
 
 class SetWhitelistViewModel(private val context: Application) : AndroidViewModel(context) {
     private val allAppListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
     val appListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
     val whitelistFlow = MutableStateFlow<Set<String>>(emptySet())
     val showSystemAppsFlow = MutableStateFlow(false)
+    val searchTextFlow = MutableStateFlow("")
     private var isModified = false
 
     init {
@@ -54,12 +56,22 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
     }
 
     private fun updateAppInfoListFlow() {
-        val appList = allAppListFlow.value
+        var appList = allAppListFlow.value
+        val searchText = searchTextFlow.value
+        val searchTextLowercase = searchText.lowercase(Locale.getDefault())
+        if (searchText.isNotEmpty()) {
+            appList = appList.filter {
+                it.packageName.lowercase(Locale.getDefault()).contains(searchTextLowercase)
+                        || it.appName.lowercase(Locale.getDefault()).contains(searchTextLowercase)
+            }
+        }
+
         if (showSystemAppsFlow.value) {
             appListFlow.setDifferentValue(appList)
         } else {
+            val whitelist = whitelistFlow.value
             appListFlow.setDifferentValue(appList.filter {
-                !it.isSystemApp
+                !it.isSystemApp || whitelist.contains(it.packageName)
             })
         }
     }
@@ -76,5 +88,10 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
             showSystemAppsFlow.value = showSystemApps
             updateAppInfoListFlow()
         }
+    }
+
+    fun updateSearchText(searchText: String) {
+        searchTextFlow.value = searchText
+        updateAppInfoListFlow()
     }
 }

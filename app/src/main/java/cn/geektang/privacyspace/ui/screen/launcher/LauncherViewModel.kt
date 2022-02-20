@@ -4,18 +4,27 @@ import android.app.Application
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.util.AppHelper
 import cn.geektang.privacyspace.util.ConfigHelper
+import cn.geektang.privacyspace.util.Su
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 class LauncherViewModel(private val context: Application) : AndroidViewModel(context) {
+    val rootStateFlow = MutableStateFlow(false)
+
+    init {
+        checkRootAndInitConfig()
+    }
 
     val appListFlow = ConfigHelper.configDataFlow.map {
         it.hiddenAppList.mapToAppInfoList()
     }
 
-    private fun List<String>.mapToAppInfoList(): List<AppInfo> {
+    private fun Set<String>.mapToAppInfoList(): List<AppInfo> {
         val flag = PackageManager.MATCH_UNINSTALLED_PACKAGES
         return this.mapNotNull { packageName ->
             try {
@@ -46,6 +55,17 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
                     isXposedModule = isXposedModule
                 )
             }
+    }
+
+    fun checkRootAndInitConfig() {
+        viewModelScope.launch {
+            val root = Su.checkRoot()
+            if (root) {
+                ConfigHelper.markIsRoot()
+                ConfigHelper.initConfig(context)
+            }
+            rootStateFlow.value = root
+        }
     }
 
     fun onUninstallApp(appInfo: AppInfo) {

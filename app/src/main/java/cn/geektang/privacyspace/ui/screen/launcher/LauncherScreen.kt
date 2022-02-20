@@ -51,6 +51,7 @@ fun LauncherScreen(
     viewModel: LauncherViewModel = viewModel()
 ) {
     val appList by viewModel.appListFlow.collectAsState(initial = emptyList())
+    val rootState by viewModel.rootStateFlow.collectAsState()
     val context = LocalContext.current
     val actions = object : LauncherActions {
         override fun uninstall(appInfo: AppInfo) {
@@ -67,8 +68,12 @@ fun LauncherScreen(
         override fun cancelHide(appInfo: AppInfo) {
             viewModel.cancelHide(appInfo)
         }
+
+        override fun refreshRootStatus() {
+            viewModel.checkRootAndInitConfig()
+        }
     }
-    LauncherScreenContent(appList, actions)
+    LauncherScreenContent(appList, rootState, actions)
 
     var isShowAlterDialog by remember {
         mutableStateOf(!context.sp.hasReadNotice)
@@ -115,11 +120,15 @@ fun LauncherScreen(
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationApi::class)
 @Composable
-private fun LauncherScreenContent(appList: List<AppInfo>, actions: LauncherActions) {
+private fun LauncherScreenContent(
+    appList: List<AppInfo>,
+    rootState: Boolean,
+    actions: LauncherActions
+) {
     val isPopupMenuShow = remember {
         mutableStateOf(false)
     }
-    LauncherPopupMenu(isPopupMenuShow)
+    LauncherPopupMenu(isPopupMenuShow, rootState)
 
     var popupMenuOffset: Offset? by remember {
         mutableStateOf(null)
@@ -171,12 +180,31 @@ private fun LauncherScreenContent(appList: List<AppInfo>, actions: LauncherActio
                 }
             }
             val loadStatus by ConfigHelper.loadingStatusFlow.collectAsState()
-            if (appList.isEmpty() && loadStatus == ConfigHelper.LOADING_STATUS_SUCCESSFUL) {
+            if (rootState && appList.isEmpty() && loadStatus == ConfigHelper.LOADING_STATUS_SUCCESSFUL) {
                 val navHostController = LocalNavHostController.current
                 Button(
                     modifier = Modifier.align(Alignment.Center),
                     onClick = { navHostController.navigate(RouteConstant.ADD_HIDDEN_APPS) }) {
                     Text(text = stringResource(id = R.string.add_hidden_apps))
+                }
+            } else if (!rootState) {
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(horizontal = 15.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.please_grant_root_permission),
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                    Button(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        onClick = {
+                            actions.refreshRootStatus()
+                        }) {
+                        Text(text = stringResource(R.string.retry))
+                    }
                 }
             }
         }
@@ -229,18 +257,18 @@ private fun LauncherPopupMenuPreview() {
     val isShow = remember {
         mutableStateOf(true)
     }
-    PopupMenuContent(isShow)
+    PopupMenuContent(isShow, false)
 }
 
 @Composable
-private fun LauncherPopupMenu(isPopupMenuShow: MutableState<Boolean>) {
+private fun LauncherPopupMenu(isPopupMenuShow: MutableState<Boolean>, rootState: Boolean) {
     PopupMenu(isShow = isPopupMenuShow) {
-        PopupMenuContent(isPopupMenuShow)
+        PopupMenuContent(isPopupMenuShow, rootState)
     }
 }
 
 @Composable
-private fun PopupMenuContent(isPopupMenuShow: MutableState<Boolean>) {
+private fun PopupMenuContent(isPopupMenuShow: MutableState<Boolean>, rootState: Boolean) {
     val navController = LocalNavHostController.current
     Column(
         modifier = Modifier
@@ -249,20 +277,54 @@ private fun PopupMenuContent(isPopupMenuShow: MutableState<Boolean>) {
     ) {
         val context = LocalContext.current
         PopupItem(text = stringResource(id = R.string.set_white_list)) {
+            if (!rootState) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.please_grant_root_permission),
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@PopupItem
+            }
             isPopupMenuShow.value = false
             navController.navigate(RouteConstant.SET_WHITE_LIST)
         }
         PopupItem(text = stringResource(id = R.string.add_hidden_apps)) {
+            if (!rootState) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.please_grant_root_permission),
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@PopupItem
+            }
             isPopupMenuShow.value = false
             navController.navigate(RouteConstant.ADD_HIDDEN_APPS)
         }
         PopupItem(text = stringResource(R.string.reboot_desktop)) {
+            if (!rootState) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.please_grant_root_permission),
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@PopupItem
+            }
+
             isPopupMenuShow.value = false
             Runtime
                 .getRuntime()
                 .exec("su -c am force-stop ${context.getLauncherPackageName() ?: "com.miui.home"}")
         }
         PopupItem(text = stringResource(R.string.reboot_system)) {
+            if (!rootState) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.please_grant_root_permission),
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@PopupItem
+            }
+
             isPopupMenuShow.value = false
             Runtime
                 .getRuntime()
@@ -403,6 +465,7 @@ fun LauncherScreenPreview() {
     )
     LauncherScreenContent(
         appList = listOf(appInfo, appInfo, appInfo, appInfo, appInfo, appInfo),
+        true,
         actions = object : LauncherActions {
 
         })
@@ -433,5 +496,8 @@ interface LauncherActions {
 
     fun cancelHide(appInfo: AppInfo) {
 
+    }
+
+    fun refreshRootStatus() {
     }
 }

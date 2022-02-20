@@ -31,11 +31,6 @@
             </intent-filter>
         </activity>
 
-        <provider
-            android:name=".provider.ConfigProvider"
-            android:authorities="${applicationId}"
-            android:exported="true" />
-
         <meta-data
             android:name="xposedmodule"
             android:value="true" />

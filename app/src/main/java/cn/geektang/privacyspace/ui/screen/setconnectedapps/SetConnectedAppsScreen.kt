@@ -28,6 +28,7 @@ fun SetConnectedAppsScreen(viewModel: SetConnectedAppsViewModel = viewModel()) {
     val whitelist by viewModel.whitelistFlow.collectAsState()
     val appName by viewModel.appNameFlow.collectAsState()
     val showSystemApps by viewModel.showSystemAppsFlow.collectAsState()
+    val searchText by viewModel.searchTextFlow.collectAsState()
     val actions = object : SetConnectedAppsActions {
         override fun addApp2Whitelist(appInfo: AppInfo) {
             viewModel.addApp2HiddenList(appInfo)
@@ -40,10 +41,15 @@ fun SetConnectedAppsScreen(viewModel: SetConnectedAppsViewModel = viewModel()) {
         override fun setSystemAppsVisible(showSystemApps: Boolean) {
             viewModel.setShowSystemApps(showSystemApps)
         }
+
+        override fun onSearchTextChange(searchText: String) {
+            viewModel.updateSearchText(searchText)
+        }
     }
     SetConnectedAppsContent(
         appName = appName,
         showSystemApps = showSystemApps,
+        searchText = searchText,
         appList = appList,
         whitelist = whitelist,
         actions = actions
@@ -63,6 +69,7 @@ fun SetConnectedAppsScreen(viewModel: SetConnectedAppsViewModel = viewModel()) {
 private fun SetConnectedAppsContent(
     appName: String,
     showSystemApps: Boolean,
+    searchText: String,
     appList: List<AppInfo>,
     whitelist: Set<String>,
     actions: SetConnectedAppsActions
@@ -80,19 +87,15 @@ private fun SetConnectedAppsContent(
 
     val navHostController = LocalNavHostController.current
     Column {
-        TopBar(stringResource(R.string.set_connected_apps), actions = {
-            IconButton(onClick = {
-                isPopupMenuShow.value = true
-            }) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = stringResource(R.string.menu)
-                )
-            }
-        }, onNavigationIconClick = {
-            navHostController.popBackStack()
-        })
-
+        SearchTopBar(
+            title = stringResource(R.string.set_connected_apps),
+            searchText = searchText,
+            onSearchTextChange = {
+                actions.onSearchTextChange(it)
+            }, showMorePopupState = isPopupMenuShow,
+            onNavigationIconClick = {
+                navHostController.popBackStack()
+            })
         if (appName.isNotBlank()) {
             Text(
                 modifier = Modifier
@@ -150,5 +153,9 @@ interface SetConnectedAppsActions {
     }
 
     fun setSystemAppsVisible(showSystemApps: Boolean) {
+    }
+
+    fun onSearchTextChange(searchText: String) {
+
     }
 }

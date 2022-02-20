@@ -16,12 +16,14 @@ import cn.geektang.privacyspace.util.setDifferentValue
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import java.util.*
 
 class AddHiddenAppsViewModel(private val context: Application) : AndroidViewModel(context) {
     val appInfoListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
     private val allAppInfoListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
     val hiddenAppListFlow = MutableStateFlow<Set<String>>(emptySet())
     val isShowSystemAppsFlow = MutableStateFlow(false)
+    val searchTextFlow = MutableStateFlow("")
     private var isModified = false
     private val connectedAppsCache = mutableMapOf<String, Set<String>>()
 
@@ -46,12 +48,21 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
     }
 
     private fun updateAppInfoListFlow() {
-        val appList = allAppInfoListFlow.value
+        var appList = allAppInfoListFlow.value
+        val searchText = searchTextFlow.value
+        val searchTextLowercase = searchText.lowercase(Locale.getDefault())
+        if (searchText.isNotEmpty()) {
+            appList = appList.filter {
+                it.packageName.lowercase(Locale.getDefault()).contains(searchTextLowercase)
+                        || it.appName.lowercase(Locale.getDefault()).contains(searchTextLowercase)
+            }
+        }
         if (isShowSystemAppsFlow.value) {
             appInfoListFlow.setDifferentValue(appList)
         } else {
+            val hiddenAppList = hiddenAppListFlow.value
             appInfoListFlow.setDifferentValue(appList.filter {
-                !it.isSystemApp
+                !it.isSystemApp || hiddenAppList.contains(it.packageName)
             })
         }
     }
@@ -106,5 +117,10 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
             )
             isModified = false
         }
+    }
+
+    fun updateSearchText(searchText: String) {
+        searchTextFlow.value = searchText
+        updateAppInfoListFlow()
     }
 }

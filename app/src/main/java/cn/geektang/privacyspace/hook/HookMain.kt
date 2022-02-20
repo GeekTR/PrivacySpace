@@ -1,17 +1,17 @@
 package cn.geektang.privacyspace.hook
 
-import android.content.pm.ApplicationInfo
-import android.content.pm.PackageInfo
+import android.os.Build
 import android.os.FileObserver
 import cn.geektang.privacyspace.ConfigConstant
 import cn.geektang.privacyspace.bean.ConfigData
+import cn.geektang.privacyspace.hook.impl.FrameworkHookerApi26Impl
+import cn.geektang.privacyspace.hook.impl.FrameworkHookerApi28Impl
+import cn.geektang.privacyspace.hook.impl.FrameworkHookerApi30Impl
+import cn.geektang.privacyspace.hook.impl.SpecialAppsHookerImpl
 import cn.geektang.privacyspace.util.ConfigHelper
 import de.robv.android.xposed.IXposedHookLoadPackage
-import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
-import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage
-import java.io.File
 
 class HookMain : IXposedHookLoadPackage {
 
@@ -30,84 +30,32 @@ class HookMain : IXposedHookLoadPackage {
         val specialHookApps = ConfigConstant.specialHookApps
         if (lpparam.packageName == ConfigConstant.ANDROID_FRAMEWORK) {
             classLoader = lpparam.classLoader
-            hookAndroidSystem(lpparam)
+
+            configData = ConfigHelper.loadConfigWithSystemApp() ?: ConfigData.EMPTY
+            startWatchingConfigFiles()
+            when {
+                Build.VERSION.SDK_INT >= 30 -> {
+                    FrameworkHookerApi30Impl.start(classLoader)
+                }
+                Build.VERSION.SDK_INT >= 28 -> {
+                    FrameworkHookerApi28Impl.start(classLoader)
+                }
+                else -> {
+                    FrameworkHookerApi26Impl.start(classLoader)
+                }
+            }
         } else if (specialHookApps.contains(lpparam.packageName)) {
             classLoader = lpparam.classLoader
-            hookSpecialApps(lpparam)
+            configData = ConfigHelper.loadConfigWithSystemApp() ?: ConfigData.EMPTY
+            startWatchingConfigFiles()
+            SpecialAppsHookerImpl.start(classLoader)
         }
-    }
-
-    private fun hookSpecialApps(lpparam: XC_LoadPackage.LoadPackageParam) {
-        val packageManagerClass = try {
-            classLoader.tryLoadClass("android.app.ApplicationPackageManager")
-        } catch (e: ClassNotFoundException) {
-            XposedBridge.log(e)
-            return
-        }
-
-        configData = ConfigHelper.loadConfigWithSystemApp() ?: ConfigData.EMPTY
-        startWatchingConfigFiles()
-        XposedHelpers.findAndHookMethod(
-            packageManagerClass,
-            "getInstalledPackages",
-            Int::class.javaPrimitiveType,
-            object : XC_MethodHook() {
-                override fun afterHookedMethod(param: MethodHookParam) {
-                    super.afterHookedMethod(param)
-                    val shouldFilterAppList = configData.hiddenAppList
-                    param.result = (param.result as List<*>?)?.filter {
-                        !shouldFilterAppList.contains((it as PackageInfo).packageName)
-                    }
-                }
-            })
-
-        XposedHelpers.findAndHookMethod(
-            packageManagerClass,
-            "getInstalledApplications",
-            Int::class.javaPrimitiveType,
-            object : XC_MethodHook() {
-                override fun afterHookedMethod(param: MethodHookParam) {
-                    super.afterHookedMethod(param)
-                    val shouldFilterAppList = configData.hiddenAppList
-                    param.result = (param.result as List<*>?)?.filter {
-                        !shouldFilterAppList.contains((it as ApplicationInfo).packageName)
-                    }
-                }
-            })
-    }
-
-    private fun hookAndroidSystem(lpparam: XC_LoadPackage.LoadPackageParam) {
-        val classLoader = classLoader
-        val appsFilerClass: Class<*>
-        val settingBaseClass: Class<*>
-        val packageSettingClass: Class<*>
-        try {
-            appsFilerClass = classLoader.tryLoadClass("com.android.server.pm.AppsFilter")
-            settingBaseClass = classLoader.tryLoadClass("com.android.server.pm.SettingBase")
-            packageSettingClass =
-                classLoader.tryLoadClass("com.android.server.pm.PackageSetting")
-        } catch (e: ClassNotFoundException) {
-            XposedBridge.log(e)
-            return
-        }
-
-        configData = ConfigHelper.loadConfigWithSystemApp() ?: ConfigData.EMPTY
-        startWatchingConfigFiles()
-        XposedHelpers.findAndHookMethod(
-            appsFilerClass,
-            "shouldFilterApplication",
-            Int::class.javaPrimitiveType,
-            settingBaseClass,
-            packageSettingClass,
-            Int::class.javaPrimitiveType,
-            FilterAppsFromAndroidMethodHook()
-        )
     }
 
     private fun startWatchingConfigFiles() {
         if (null == fileObserver) {
             fileObserver =
-                object : FileObserver(File(ConfigConstant.CONFIG_FILE_FOLDER)) {
+                object : FileObserver(ConfigConstant.CONFIG_FILE_FOLDER) {
                     override fun onEvent(event: Int, path: String?) {
                         if (event == CLOSE_WRITE && path == ConfigConstant.CONFIG_FILE_JSON) {
                             val newConfigData =
@@ -129,4 +77,5 @@ class HookMain : IXposedHookLoadPackage {
     private fun ClassLoader.tryLoadClass(name: String): Class<*> {
         return loadClass(name) ?: throw ClassNotFoundException()
     }
+
 }

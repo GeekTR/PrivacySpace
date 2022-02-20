@@ -22,4 +22,9 @@
     <string name="view_update_info_github">View Update Info(Github)</string>
     <string name="Coolapk_not_found">Coolapk not found.</string>
     <string name="xposeddescription">Move apps to another space.</string>
+    <string name="retry">Retry</string>
+    <string name="please_grant_root_permission">Please grant root permission.</string>
+    <string name="back">Back</string>
+    <string name="search">Search…</string>
+    <string name="clear">Clear</string>
 </resources>

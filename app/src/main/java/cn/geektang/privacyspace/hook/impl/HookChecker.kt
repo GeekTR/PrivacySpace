@@ -1,23 +1,22 @@
-package cn.geektang.privacyspace.hook
+package cn.geektang.privacyspace.hook.impl
 
 import cn.geektang.privacyspace.ConfigConstant
-import de.robv.android.xposed.XC_MethodHook
+import cn.geektang.privacyspace.hook.HookMain
 import de.robv.android.xposed.XposedBridge
 
-class FilterAppsFromAndroidMethodHook : XC_MethodHook() {
+object HookChecker {
 
-    override fun afterHookedMethod(param: MethodHookParam) {
-        if (param.result == true) {
-            return
-        }
+    fun shouldIntercept(
+        targetPackageName: String,
+        callingPackageName: String
+    ): Boolean {
+        var result = false
         val configData = HookMain.configData
         val shouldFilterAppList = configData.hiddenAppList
         val userWhitelist = configData.whitelist
         val connectedAppsInfoMap = configData.connectedApps
         val enableLog = configData.enableLog
         val defaultWhitelist = ConfigConstant.defaultWhitelist
-        val targetPackageName = param.args.getOrNull(2)?.packageName ?: return
-        val callingPackageName = param.args.getOrNull(1)?.packageName ?: return
         if (callingPackageName != targetPackageName
             && !defaultWhitelist.contains(callingPackageName)
             && shouldFilterAppList.contains(targetPackageName)
@@ -29,15 +28,13 @@ class FilterAppsFromAndroidMethodHook : XC_MethodHook() {
                 if (enableLog) {
                     XposedBridge.log("已阻止${callingPackageName}获取${targetPackageName}")
                 }
-                param.result = true
+                result = true
             } else {
                 if (enableLog) {
                     XposedBridge.log("未阻止${callingPackageName}获取${targetPackageName}")
                 }
             }
         }
+        return result
     }
-
-    private val Any.packageName: String
-        get() = toString().substringAfterLast(" ").substringBefore("/")
 }

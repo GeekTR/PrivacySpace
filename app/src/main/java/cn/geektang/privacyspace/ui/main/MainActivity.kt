@@ -1,6 +1,7 @@
 package cn.geektang.privacyspace.ui.main
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -23,13 +25,14 @@ import cn.geektang.privacyspace.ui.theme.PrivacySpaceTheme
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.LocalNavHostController
 import cn.geektang.privacyspace.util.NavHostControllerWrapper
+import cn.geektang.privacyspace.util.Su
 import com.google.accompanist.insets.ProvideWindowInsets
+import kotlinx.coroutines.launch
+import java.lang.RuntimeException
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        ConfigHelper.initConfig(applicationContext)
-
         setContent {
             PrivacySpaceTheme {
                 ProvideWindowInsets {
@@ -46,7 +49,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (!isFinishing && ConfigHelper.loadingStatusFlow.value == ConfigHelper.LOADING_STATUS_INIT) {
+        if (!isFinishing
+            && ConfigHelper.loadingStatusFlow.value == ConfigHelper.LOADING_STATUS_INIT) {
             ConfigHelper.initConfig(applicationContext)
         }
     }
