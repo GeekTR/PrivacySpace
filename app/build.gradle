@@ -2,8 +2,6 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'com.google.devtools.ksp'
-    id 'com.google.gms.google-services'
-    id 'com.google.firebase.crashlytics'
 }
 
 android {
@@ -86,7 +84,4 @@ dependencies {
     implementation 'com.google.accompanist:accompanist-insets-ui:0.23.0'
     implementation 'com.squareup.moshi:moshi:1.13.0'
     ksp("com.squareup.moshi:moshi-kotlin-codegen:1.13.0")
-    implementation platform('com.google.firebase:firebase-bom:29.1.0')
-    implementation 'com.google.firebase:firebase-analytics-ktx'
-    implementation 'com.google.firebase:firebase-crashlytics-ktx'
 }

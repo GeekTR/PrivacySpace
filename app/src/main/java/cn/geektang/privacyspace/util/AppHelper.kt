@@ -3,10 +3,9 @@ package cn.geektang.privacyspace.util
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import android.os.Build
 import cn.geektang.privacyspace.bean.AppInfo
-import cn.geektang.privacyspace.ui.screen.launcher.getPackageInfo
 import cn.geektang.privacyspace.ui.screen.launcher.isXposedModule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -21,25 +20,21 @@ object AppHelper {
             return@withContext packageManager
                 .getInstalledApplications(flag)
                 .mapNotNull { applicationInfo ->
-                    try {
-                        val appName = applicationInfo.loadLabel(packageManager).toString()
-                        val appIcon = applicationInfo.loadIcon(packageManager)
-                        val packageInfo = getPackageInfo(
-                            this@loadAllAppList,
-                            applicationInfo.packageName,
-                            PackageManager.GET_META_DATA
-                        )
-                        AppInfo(
-                            applicationInfo = applicationInfo,
-                            packageName = applicationInfo.packageName,
-                            appName = appName,
-                            appIcon = appIcon,
-                            isSystemApp = isSystemApp(applicationInfo),
-                            isXposedModule = packageInfo.applicationInfo.isXposedModule()
-                        )
-                    } catch (ignored: PackageManager.NameNotFoundException) {
-                        null
-                    }
+                    val appName = applicationInfo.loadLabel(packageManager).toString()
+                    val appIcon = applicationInfo.loadIcon(packageManager)
+                    val packageInfo = getPackageInfo(
+                        this@loadAllAppList,
+                        applicationInfo.packageName,
+                        PackageManager.GET_META_DATA
+                    ) ?: return@mapNotNull null
+                    AppInfo(
+                        applicationInfo = applicationInfo,
+                        packageName = applicationInfo.packageName,
+                        appName = appName,
+                        appIcon = appIcon,
+                        isSystemApp = isSystemApp(applicationInfo),
+                        isXposedModule = packageInfo.applicationInfo.isXposedModule()
+                    )
                 }
         }
     }
@@ -109,5 +104,16 @@ object AppHelper {
             e.printStackTrace()
         }
         return scopeList
+    }
+
+    fun getPackageInfo(context: Context, packageName: String, flag: Int = 0): PackageInfo? {
+        return try {
+            context.packageManager.getPackageInfo(
+                packageName,
+                flag
+            )
+        } catch (e: PackageManager.NameNotFoundException) {
+            null
+        }
     }
 }

@@ -5,7 +5,7 @@ import android.content.pm.PackageManager
 import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.ConfigConstant
 import cn.geektang.privacyspace.bean.ConfigData
-import cn.geektang.privacyspace.ui.screen.launcher.getPackageInfo
+import cn.geektang.privacyspace.util.AppHelper.getPackageInfo
 import de.robv.android.xposed.XposedBridge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -51,11 +51,14 @@ object ConfigHelper {
                             packageName,
                             PackageManager.GET_META_DATA
                         )
-                        val scopeList =
+                        val scopeList = if (packageInfo == null) {
+                            emptyList()
+                        } else {
                             AppHelper.getXposedModuleScopeList(context, packageInfo.applicationInfo)
                                 .filter {
                                     it != ConfigConstant.ANDROID_FRAMEWORK
                                 }
+                        }
                         if (scopeList.isNotEmpty()) {
                             connectedApps[packageName] = scopeList.toSet()
                         }

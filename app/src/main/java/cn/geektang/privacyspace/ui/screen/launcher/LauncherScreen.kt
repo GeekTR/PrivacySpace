@@ -471,15 +471,6 @@ fun LauncherScreenPreview() {
         })
 }
 
-@Throws(PackageManager.NameNotFoundException::class)
-fun getPackageInfo(context: Context, packageName: String, flag: Int = 0): PackageInfo {
-    val packageInfo = context.packageManager.getPackageInfo(
-        packageName,
-        flag
-    )
-    return packageInfo
-}
-
 fun ApplicationInfo.isXposedModule(): Boolean {
     return metaData?.getBoolean("xposedmodule") == true ||
             metaData?.containsKey("xposedminversion") == true

@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.util.AppHelper
+import cn.geektang.privacyspace.util.AppHelper.getPackageInfo
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.Su
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,15 +38,16 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
             }
         }
             .sortedWith(ApplicationInfo.DisplayNameComparator(context.packageManager))
-            .map { applicationInfo ->
+            .mapNotNull { applicationInfo ->
                 val appName = applicationInfo.loadLabel(context.packageManager).toString()
                 val appIcon = applicationInfo.loadIcon(context.packageManager)
                 val packageInfo = getPackageInfo(
                     context,
                     applicationInfo.packageName,
                     PackageManager.GET_META_DATA
-                )
-                val isXposedModule = packageInfo.applicationInfo.isXposedModule()
+                ) ?: return@mapNotNull null
+                val isXposedModule =
+                    packageInfo.applicationInfo.isXposedModule()
                 AppInfo(
                     applicationInfo = applicationInfo,
                     packageName = applicationInfo.packageName,

@@ -7,8 +7,8 @@ import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.ConfigConstant
 import cn.geektang.privacyspace.bean.AppInfo
-import cn.geektang.privacyspace.ui.screen.launcher.getPackageInfo
 import cn.geektang.privacyspace.util.AppHelper
+import cn.geektang.privacyspace.util.AppHelper.getPackageInfo
 import cn.geektang.privacyspace.util.AppHelper.loadAllAppList
 import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
@@ -77,10 +77,13 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
                 appInfo.packageName,
                 PackageManager.GET_META_DATA
             )
-            val scopeList =
+            val scopeList = if (packageInfo == null) {
+                emptyList()
+            } else {
                 AppHelper.getXposedModuleScopeList(context, packageInfo.applicationInfo).filter {
                     it != ConfigConstant.ANDROID_FRAMEWORK
                 }
+            }
 
             if (scopeList.isNotEmpty()) {
                 val connectedApps =
