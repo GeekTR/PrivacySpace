@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.ConfigConstant
 import cn.geektang.privacyspace.bean.AppInfo
+import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
 import cn.geektang.privacyspace.util.AppHelper.loadAllAppList
 import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
@@ -15,18 +16,23 @@ import kotlinx.coroutines.launch
 import java.util.*
 
 class SetWhitelistViewModel(private val context: Application) : AndroidViewModel(context) {
-    private val allAppListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
+    val allAppListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
     val appListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
     val whitelistFlow = MutableStateFlow<Set<String>>(emptySet())
     val showSystemAppsFlow = MutableStateFlow(false)
     val searchTextFlow = MutableStateFlow("")
+    private val sharedUserIdMap = mutableMapOf<String, String>()
     private var isModified = false
 
     init {
         viewModelScope.launch {
             launch {
                 ConfigHelper.configDataFlow.collect {
-                    whitelistFlow.value = ConfigHelper.configDataFlow.value.whitelist.toSet()
+                    whitelistFlow.value = ConfigHelper.configDataFlow.value.whitelist
+                    val sharedUserIdMapNew =
+                        ConfigHelper.configDataFlow.value.sharedUserIdMap ?: emptyMap()
+                    sharedUserIdMap.clear()
+                    sharedUserIdMap.putAll(sharedUserIdMapNew)
                 }
             }
 
@@ -42,6 +48,11 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
     }
 
     fun addApp2Whitelist(appInfo: AppInfo) {
+        val targetSharedUserId = appInfo.getSharedUserId(context)
+        if (!targetSharedUserId.isNullOrEmpty()) {
+            sharedUserIdMap[appInfo.packageName] = targetSharedUserId
+        }
+
         val whitelist = whitelistFlow.value.toMutableSet()
         whitelist.add(appInfo.packageName)
         whitelistFlow.value = whitelist
@@ -78,7 +89,7 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
 
     fun tryUpdateConfig() {
         if (isModified) {
-            ConfigHelper.updateWhitelist(context, whitelistFlow.value)
+            ConfigHelper.updateWhitelist(whitelistFlow.value, sharedUserIdMap)
             isModified = false
         }
     }

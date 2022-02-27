@@ -23,8 +23,12 @@
     <string name="Coolapk_not_found">Coolapk not found.</string>
     <string name="xposeddescription">Move apps to another space.</string>
     <string name="retry">Retry</string>
-    <string name="please_grant_root_permission">Please grant root permission.</string>
+    <string name="tips_go_active">The module does not take effect</string>
+    <string name="tips_restart_to_active">The module does not take effect, you may need to: \n1. Activate this module;\n2. Restart the System.</string>
     <string name="back">Back</string>
     <string name="search">Search…</string>
     <string name="clear">Clear</string>
+    <string name="desktop_restart_successfully">Desktop restart successfully!</string>
+    <string name="desktop_restart_failed">Desktop restart failed…</string>
+    <string name="tips_whitelist_magisk">Don\'t forget to whitelist Magisk (if it has random package names enabled)</string>
 </resources>

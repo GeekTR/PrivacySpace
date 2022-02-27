@@ -9,16 +9,14 @@ import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.util.AppHelper
 import cn.geektang.privacyspace.util.AppHelper.getPackageInfo
 import cn.geektang.privacyspace.util.ConfigHelper
-import cn.geektang.privacyspace.util.Su
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class LauncherViewModel(private val context: Application) : AndroidViewModel(context) {
-    val rootStateFlow = MutableStateFlow(false)
-
     init {
-        checkRootAndInitConfig()
+        viewModelScope.launch {
+            ConfigHelper.initConfig(context)
+        }
     }
 
     val appListFlow = ConfigHelper.configDataFlow.map {
@@ -59,21 +57,6 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
             }
     }
 
-    fun checkRootAndInitConfig() {
-        viewModelScope.launch {
-            val root = Su.checkRoot()
-            if (root) {
-                ConfigHelper.markIsRoot()
-                ConfigHelper.initConfig(context)
-            }
-            rootStateFlow.value = root
-        }
-    }
-
-    fun onUninstallApp(appInfo: AppInfo) {
-        removeAppFromHiddenList(appInfo)
-    }
-
     fun cancelHide(appInfo: AppInfo) {
         removeAppFromHiddenList(appInfo)
     }
@@ -85,7 +68,6 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
             val connectedAppsNew = configData.connectedApps.toMutableMap()
             connectedAppsNew.remove(appInfo.packageName)
             ConfigHelper.updateHiddenListAndConnectedApps(
-                context = context,
                 hiddenAppListNew = hiddenAppListNew,
                 connectedAppsNew = connectedAppsNew
             )

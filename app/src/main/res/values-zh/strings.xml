@@ -23,8 +23,12 @@
     <string name="Coolapk_not_found">似乎没有安装酷安app</string>
     <string name="xposeddescription">将App\"移动\"到另一个空间</string>
     <string name="retry">重试</string>
-    <string name="please_grant_root_permission">请授予Root权限</string>
+    <string name="tips_go_active">模块未生效</string>
+    <string name="tips_restart_to_active">模块未生效，您可能需要：\n1、激活本模块；\n2、重启手机。</string>
     <string name="back">返回</string>
     <string name="search">搜索...</string>
     <string name="clear">清空</string>
+    <string name="desktop_restart_successfully">桌面重启成功!</string>
+    <string name="desktop_restart_failed">桌面重启失败...</string>
+    <string name="tips_whitelist_magisk">不要忘记将Magisk加入白名单 (如果开启了Magisk随机包名功能的话)</string>
 </resources>

@@ -8,13 +8,11 @@ Similar to MIUI's "Second space", you can "move" some apps to the "Privacy Space
 
 2. Apps that move to the "Privacy Space" can be launched by clicking the APP icon on the "Privacy Space" home page. / 移动到“隐秘空间”的应用可以在“隐秘空间”主页面点击APP的图标启动。
 
-3. Due to system limitations, this module requires Root permission to work properly. / 因为受限于系统，此APP需要Root权限才能正常工作。
+3. If you don't want to hide apps that move to the "Privacy Space" on your desktop (or some other apps), you can whitelist your desktop (or apps that you don't want to hide from it). / 如果您不想在桌面（或一些其他APP内）隐藏移动到“隐秘空间”的APP，您可以将桌面（或您不想对其隐藏的APP）加入白名单。
 
-4. If you don't want to hide apps that move to the "Privacy Space" on your desktop (or some other apps), you can whitelist your desktop (or apps that you don't want to hide from it). / 如果您不想在桌面（或一些其他APP内）隐藏移动到“隐秘空间”的APP，您可以将桌面（或您不想对其隐藏的APP）加入白名单。
+4. If you use this module to hide some system apps, the system may fail to boot after the restart. Therefore, exercise caution when hiding system apps. / 如果用此模块隐藏了一些系统APP，将可能导致重启后系统无法开机，请对系统应用谨慎操作。
 
-5. If you use this module to hide some system apps, the system may fail to boot after the restart. Therefore, exercise caution when hiding system apps. / 如果用此模块隐藏了一些系统APP，将可能导致重启后系统无法开机，请对系统应用谨慎操作。
-
-6. If this module causes your system to fail to boot, you can restart the system again after connecting to the computer and executing "adb uninstall cn.geektang.privacyspace" on the system load page (with USB debugging enabled). / 如果此模块导致您的系统无法启动，您可以在连接电脑后，在系统加载页面执行（开启usb调试的情况下）"adb uninstall cn.geektang.privacyspace"后再次重启。（或者您可以选择“搞机助手”的“自动神仙救砖”模块）
+5. If this module causes your system to fail to boot, you can restart the system again after connecting to the computer and executing "adb uninstall cn.geektang.privacyspace" on the system load page (with USB debugging enabled). / 如果此模块导致您的系统无法启动，您可以在连接电脑后，在系统加载页面执行（开启usb调试的情况下）"adb uninstall cn.geektang.privacyspace"后再次重启。（或者您可以选择“搞机助手”的“自动神仙救砖”模块）
 
 
 ## Todo / 待办事项
@@ -27,7 +25,7 @@ They will coming soon in future.
 
 - [x] Fixed the bug that some mobile phones crashed directly without root permission. \ 修复部分手机无Root权限直接闪退的问题
 
-- [ ] Remove the dependency on root permissions. \ 移除对Root权限的依赖
+- [x] Remove the dependency on root permissions. \ 移除对Root权限的依赖
 
 - [ ] Install Xposed module to automatically hide (user optional). \ 安装Xposed模块自动隐藏（用户可选）
 

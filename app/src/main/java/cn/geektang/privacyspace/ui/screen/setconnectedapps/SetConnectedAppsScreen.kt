@@ -24,6 +24,8 @@ import cn.geektang.privacyspace.util.OnLifecycleEvent
 
 @Composable
 fun SetConnectedAppsScreen(viewModel: SetConnectedAppsViewModel = viewModel()) {
+    val allAppList by viewModel.allAppListFlow.collectAsState()
+    val isLoading = allAppList.isEmpty()
     val appList by viewModel.appListFlow.collectAsState()
     val whitelist by viewModel.whitelistFlow.collectAsState()
     val appName by viewModel.appNameFlow.collectAsState()
@@ -48,6 +50,7 @@ fun SetConnectedAppsScreen(viewModel: SetConnectedAppsViewModel = viewModel()) {
     }
     SetConnectedAppsContent(
         appName = appName,
+        isLoading = isLoading,
         showSystemApps = showSystemApps,
         searchText = searchText,
         appList = appList,
@@ -68,6 +71,7 @@ fun SetConnectedAppsScreen(viewModel: SetConnectedAppsViewModel = viewModel()) {
 @Composable
 private fun SetConnectedAppsContent(
     appName: String,
+    isLoading : Boolean,
     showSystemApps: Boolean,
     searchText: String,
     appList: List<AppInfo>,
@@ -107,7 +111,7 @@ private fun SetConnectedAppsContent(
             )
         }
 
-        LoadingBox(modifier = Modifier.fillMaxSize(), showLoading = appList.isEmpty()) {
+        LoadingBox(modifier = Modifier.fillMaxSize(), showLoading = isLoading) {
             LazyColumn(content = {
                 items(appList) { appInfo ->
                     val isChecked = whitelist.contains(appInfo.packageName)

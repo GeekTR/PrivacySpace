@@ -1,11 +1,13 @@
 package cn.geektang.privacyspace.util
 
+import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.pm.PackageManager
-import cn.geektang.privacyspace.BuildConfig
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.ResolveInfo
 import cn.geektang.privacyspace.ConfigConstant
 import cn.geektang.privacyspace.bean.ConfigData
-import cn.geektang.privacyspace.util.AppHelper.getPackageInfo
+import cn.geektang.privacyspace.util.AppHelper.getApkInstallerPackageName
 import de.robv.android.xposed.XposedBridge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -18,66 +20,83 @@ object ConfigHelper {
     const val LOADING_STATUS_INIT = 0
     const val LOADING_STATUS_LOADING = 1
     const val LOADING_STATUS_SUCCESSFUL = 2
+    const val LOADING_STATUS_FAILED = 3
 
-    private val lock = Any()
+    private lateinit var configClient: ConfigClient
     private val scope = MainScope()
     val loadingStatusFlow = MutableStateFlow(LOADING_STATUS_INIT)
     val configDataFlow = MutableStateFlow(ConfigData.EMPTY)
 
     @Volatile
-    private var root: Boolean = false
-
-    fun markIsRoot() {
-        root = true
-    }
+    private var isServerStart: Boolean = false
 
     fun initConfig(context: Context) {
-        if (!root) {
+        if (!::configClient.isInitialized) {
+            configClient = ConfigClient(context.applicationContext)
+            startWatchingAppUninstall(context)
+        }
+        val serverVersion = configClient.serverVersion()
+        isServerStart = serverVersion > 0
+        if (!isServerStart) {
+            loadingStatusFlow.value = LOADING_STATUS_FAILED
             return
         }
         scope.launch {
+            val installerPackageName = context.getApkInstallerPackageName()
             loadingStatusFlow.value = LOADING_STATUS_LOADING
-            var configData = loadConfig()
+            var configData = configClient.queryConfig()
             if (null == configData) {
-                val hiddenAppList = mutableSetOf<String>()
-                val whitelist = mutableSetOf<String>()
-                loadHiddenAppListConfigOld(hiddenAppList)
-                loadWhitelistConfigOld(whitelist)
-                if (hiddenAppList.isNotEmpty() || whitelist.isNotEmpty()) {
-                    val connectedApps = mutableMapOf<String, Set<String>>()
-                    for (packageName in hiddenAppList) {
-                        val packageInfo = getPackageInfo(
-                            context,
-                            packageName,
-                            PackageManager.GET_META_DATA
-                        )
-                        val scopeList = if (packageInfo == null) {
-                            emptyList()
-                        } else {
-                            AppHelper.getXposedModuleScopeList(context, packageInfo.applicationInfo)
-                                .filter {
-                                    it != ConfigConstant.ANDROID_FRAMEWORK
-                                }
-                        }
-                        if (scopeList.isNotEmpty()) {
-                            connectedApps[packageName] = scopeList.toSet()
-                        }
-                    }
+                configClient.migrateOldConfig()
+                configData = configClient.queryConfig()
+            }
+            configData = configData ?: configDataFlow.value
+            if (!installerPackageName.isNullOrEmpty()
+                && !configData.whitelist.contains(installerPackageName)
+            ) {
+                val whitelistNew = configData.whitelist.toMutableSet()
+                whitelistNew.add(installerPackageName)
+                updateWhitelist(
+                    whitelistNew = whitelistNew,
+                    sharedUserIdMapNew = configData.sharedUserIdMap ?: emptyMap()
+                )
+            }
+            configDataFlow.value = configData
+            loadingStatusFlow.value = LOADING_STATUS_SUCCESSFUL
+        }
+    }
 
-                    removeOldConfigFiles()
-                    configData = ConfigData(
-                        enableLog = BuildConfig.DEBUG,
-                        hiddenAppList = hiddenAppList,
-                        whitelist = whitelist,
-                        connectedApps = connectedApps
-                    )
-                    updateConfigFileInner(context, configData)
+    private fun startWatchingAppUninstall(context: Context) {
+        val packageFilter = IntentFilter()
+        packageFilter.addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED)
+        packageFilter.addDataScheme("package")
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(cotext: Context, intent: Intent) {
+                when (intent.action) {
+                    Intent.ACTION_PACKAGE_FULLY_REMOVED -> {
+                        val packageName = intent.dataString?.substringAfter("package:")
+                        removeConfigForApp(packageName ?: return)
+                    }
+                    else -> {}
                 }
             }
-            if (null != configData) {
-                configDataFlow.value = configData
+        }
+        context.applicationContext.registerReceiver(receiver, packageFilter)
+    }
+
+    private fun removeConfigForApp(packageName: String) {
+        // switch to ui thread
+        scope.launch {
+            val configData = configDataFlow.value
+            if (configData == ConfigData.EMPTY) {
+                return@launch
             }
-            loadingStatusFlow.value = LOADING_STATUS_SUCCESSFUL
+            val hiddenAppListNew = configData.hiddenAppList.toMutableSet()
+            val connectedAppsNew = configData.connectedApps.toMutableMap()
+            if (hiddenAppListNew.contains(packageName)) {
+                hiddenAppListNew.remove(packageName)
+                connectedAppsNew.remove(packageName)
+                updateHiddenListAndConnectedApps(hiddenAppListNew, connectedAppsNew)
+            }
         }
     }
 
@@ -92,125 +111,73 @@ object ConfigHelper {
         }
     }
 
-    private suspend fun loadConfig(): ConfigData? {
-        return withContext(Dispatchers.IO) {
-            val process =
-                Runtime.getRuntime()
-                    .exec("su -c cat ${ConfigConstant.CONFIG_FILE_FOLDER}${ConfigConstant.CONFIG_FILE_JSON}")
-            val configString = process.inputStream.use { inputStream ->
-                String(inputStream.readBytes())
-            }
-            process.waitFor()
-            return@withContext if (configString.isNotBlank()) {
-                try {
-                    JsonHelper.getConfigAdapter().fromJson(configString)
-                } catch (e: Throwable) {
-                    XposedBridge.log(e)
-                    null
-                }
-            } else {
-                null
-            }
-        }
-    }
-
-    private suspend fun removeOldConfigFiles() {
+    private suspend fun updateConfigFileInner(configData: ConfigData) {
         withContext(Dispatchers.IO) {
-            Runtime.getRuntime()
-                .exec("su -c rm -f ${ConfigConstant.CONFIG_FILE_FOLDER}${ConfigConstant.CONFIG_FILE_APP_LIST}")
-            Runtime.getRuntime()
-                .exec("su -c rm -f ${ConfigConstant.CONFIG_FILE_FOLDER}${ConfigConstant.CONFIG_FILE_WHITELIST}")
-        }
-    }
-
-    private suspend fun loadHiddenAppListConfigOld(appList: MutableSet<String>) {
-        loadConfigInnerOld(
-            "${ConfigConstant.CONFIG_FILE_FOLDER}${ConfigConstant.CONFIG_FILE_APP_LIST}",
-            appList
-        )
-    }
-
-    private suspend fun loadWhitelistConfigOld(appList: MutableSet<String>) {
-        loadConfigInnerOld(
-            "${ConfigConstant.CONFIG_FILE_FOLDER}${ConfigConstant.CONFIG_FILE_WHITELIST}",
-            appList
-        )
-    }
-
-    private suspend fun loadConfigInnerOld(
-        configFilePath: String,
-        appList: MutableSet<String>
-    ) {
-        withContext(Dispatchers.IO) {
-            val process =
-                Runtime.getRuntime().exec("su -c cat $configFilePath")
-            val appListString = process.inputStream.use { inputStream ->
-                String(inputStream.readBytes())
-            }
-            process.waitFor()
-            if (appListString.isNotBlank()) {
-                synchronized(lock) {
-                    appList.clear()
-                    appList.addAll(appListString.split(","))
-                }
-            }
-        }
-    }
-
-    private suspend fun updateConfigFileInner(context: Context, configData: ConfigData) {
-        withContext(Dispatchers.IO) {
-            val localConfigFile =
-                File(context.cacheDir, "config/${ConfigConstant.CONFIG_FILE_JSON}")
-            val configFileJson = JsonHelper.getConfigAdapter().toJson(configData)
-            localConfigFile.parentFile?.mkdirs()
-            if (localConfigFile.exists()) {
-                localConfigFile.delete()
-            }
-            localConfigFile.createNewFile()
-            localConfigFile.writeText(configFileJson)
-
-            Runtime.getRuntime().exec("su -c mkdir -pv ${ConfigConstant.CONFIG_FILE_FOLDER}")
-                .waitFor()
-            Runtime.getRuntime()
-                .exec("su -c cp ${localConfigFile.absolutePath} ${ConfigConstant.CONFIG_FILE_FOLDER}")
-                .waitFor()
-            Runtime.getRuntime().exec("su -c chmod 604 ${ConfigConstant.CONFIG_FILE_FOLDER}*")
-                .waitFor()
+            configClient.updateConfig(configData)
         }
     }
 
     fun updateHiddenListAndConnectedApps(
-        context: Context,
         hiddenAppListNew: Set<String>,
-        connectedAppsNew: Map<String, Set<String>>
+        connectedAppsNew: Map<String, Set<String>>,
+        sharedUserIdMapNew: Map<String, String>? = null
     ) {
         val newConfigData = configDataFlow.value.copy(
-            hiddenAppList = hiddenAppListNew,
-            connectedApps = connectedAppsNew.toMutableMap()
+            hiddenAppList = hiddenAppListNew.toMutableSet(),
+            connectedApps = connectedAppsNew.toMutableMap(),
+            sharedUserIdMap = sharedUserIdMapNew?.toMutableMap()
+                ?: configDataFlow.value.sharedUserIdMap
         )
         configDataFlow.value = newConfigData
         scope.launch {
-            updateConfigFileInner(context, newConfigData)
+            updateConfigFileInner(newConfigData)
         }
     }
 
-    fun updateWhitelist(context: Context, whitelistNew: Set<String>) {
+    fun updateWhitelist(whitelistNew: Set<String>, sharedUserIdMapNew: Map<String, String>) {
         val newConfigData = configDataFlow.value.copy(
-            whitelist = whitelistNew
+            whitelist = whitelistNew.toMutableSet(),
+            sharedUserIdMap = sharedUserIdMapNew.toMutableMap()
         )
         configDataFlow.value = newConfigData
         scope.launch {
-            updateConfigFileInner(context, newConfigData)
+            updateConfigFileInner(newConfigData)
         }
     }
 
-    fun updateConnectedApps(context: Context, connectedAppsNew: Map<String, Set<String>>) {
+    fun updateConnectedApps(
+        connectedAppsNew: Map<String, Set<String>>,
+        sharedUserIdMapNew: Map<String, String>
+    ) {
         val newConfigData = configDataFlow.value.copy(
-            connectedApps = connectedAppsNew.toMutableMap()
+            connectedApps = connectedAppsNew.toMutableMap(),
+            sharedUserIdMap = sharedUserIdMapNew.toMutableMap()
         )
         configDataFlow.value = newConfigData
         scope.launch {
-            updateConfigFileInner(context, newConfigData)
+            updateConfigFileInner(newConfigData)
         }
+    }
+
+    fun rebootTheSystem() {
+        configClient.rebootTheSystem()
+    }
+
+    fun forceStop(packageName: String): Boolean {
+        return configClient.forceStop(packageName)
+    }
+
+    fun ResolveInfo.getPackageName(): String? {
+        var packageName = activityInfo?.packageName
+        if (packageName.isNullOrEmpty()) {
+            packageName = providerInfo?.packageName
+        }
+        if (packageName.isNullOrEmpty()) {
+            packageName = serviceInfo?.packageName
+        }
+        if (packageName.isNullOrEmpty()) {
+            packageName = resolvePackageName
+        }
+        return packageName
     }
 }

@@ -20,6 +20,14 @@ var SharedPreferences.hasReadNotice: Boolean
         edit().putBoolean("readNotice", value).apply()
     }
 
+var SharedPreferences.hasReadNotice2: Boolean
+    get() {
+        return getBoolean("readNotice2", false)
+    }
+    set(value) {
+        edit().putBoolean("readNotice2", value).apply()
+    }
+
 fun Context.showToast(text: String) {
     Toast.makeText(
         this,

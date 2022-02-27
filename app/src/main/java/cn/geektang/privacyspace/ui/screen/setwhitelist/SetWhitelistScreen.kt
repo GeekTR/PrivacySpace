@@ -21,6 +21,8 @@ import cn.geektang.privacyspace.util.OnLifecycleEvent
 
 @Composable
 fun SetWhitelistScreen(viewModel: SetWhitelistViewModel = viewModel()) {
+    val allAllList by viewModel.allAppListFlow.collectAsState()
+    val isLoading = allAllList.isEmpty()
     val appList by viewModel.appListFlow.collectAsState()
     val whitelist by viewModel.whitelistFlow.collectAsState()
     val showSystemApps by viewModel.showSystemAppsFlow.collectAsState()
@@ -42,7 +44,14 @@ fun SetWhitelistScreen(viewModel: SetWhitelistViewModel = viewModel()) {
             viewModel.updateSearchText(searchText)
         }
     }
-    SetWhiteListContent(appList, whitelist, searchText, showSystemApps, actions)
+    SetWhiteListContent(
+        appList = appList,
+        whitelist = whitelist,
+        searchText = searchText,
+        isLoading = isLoading,
+        showSystemApps = showSystemApps,
+        actions = actions
+    )
     OnLifecycleEvent(onEvent = { event ->
         if (event == Lifecycle.Event.ON_PAUSE
             || event == Lifecycle.Event.ON_STOP
@@ -58,6 +67,7 @@ private fun SetWhiteListContent(
     appList: List<AppInfo>,
     whitelist: Set<String>,
     searchText: String,
+    isLoading: Boolean,
     showSystemApps: Boolean,
     actions: SetWhitelistActions
 ) {
@@ -82,7 +92,7 @@ private fun SetWhiteListContent(
             onNavigationIconClick = {
                 navHostController.popBackStack()
             })
-        LoadingBox(modifier = Modifier.fillMaxSize(), showLoading = appList.isEmpty()) {
+        LoadingBox(modifier = Modifier.fillMaxSize(), showLoading = isLoading) {
             LazyColumn(content = {
                 items(appList) { appInfo ->
                     val isChecked = whitelist.contains(appInfo.packageName)

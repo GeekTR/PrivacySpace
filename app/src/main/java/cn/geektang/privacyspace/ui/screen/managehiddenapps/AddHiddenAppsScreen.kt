@@ -1,33 +1,35 @@
 package cn.geektang.privacyspace.ui.screen.managehiddenapps
 
+import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.graphics.drawable.ColorDrawable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.AlertDialog
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.R
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.ui.widget.*
-import cn.geektang.privacyspace.util.LocalNavHostController
-import cn.geektang.privacyspace.util.OnLifecycleEvent
-import kotlinx.coroutines.flow.MutableStateFlow
+import cn.geektang.privacyspace.util.*
+import kotlin.system.exitProcess
 
 @Composable
 fun AddHiddenAppsScreen(viewModel: AddHiddenAppsViewModel = viewModel()) {
+    val allAppInfoList by viewModel.allAppInfoListFlow.collectAsState()
+    val isLoading = allAppInfoList.isEmpty()
     val appInfoList by viewModel.appInfoListFlow.collectAsState()
     val hiddenAppList by viewModel.hiddenAppListFlow.collectAsState()
     val showSystemApps by viewModel.isShowSystemAppsFlow.collectAsState()
@@ -50,7 +52,18 @@ fun AddHiddenAppsScreen(viewModel: AddHiddenAppsViewModel = viewModel()) {
         }
     }
 
-    AddHiddenAppsContent(appInfoList, hiddenAppList, searchText, showSystemApps, actions)
+    AddHiddenAppsContent(
+        appInfoList = appInfoList,
+        hiddenAppList = hiddenAppList,
+        searchText = searchText,
+        isLoading = isLoading,
+        showSystemApps = showSystemApps,
+        actions = actions
+    )
+
+    val context = LocalContext.current
+    NoticeDialog(context)
+
     OnLifecycleEvent { event ->
         if (event == Lifecycle.Event.ON_PAUSE
             || event == Lifecycle.Event.ON_STOP
@@ -62,10 +75,24 @@ fun AddHiddenAppsScreen(viewModel: AddHiddenAppsViewModel = viewModel()) {
 }
 
 @Composable
+private fun NoticeDialog(context: Context) {
+    var isShowAlterDialog by remember {
+        mutableStateOf(!context.sp.hasReadNotice2)
+    }
+    if (isShowAlterDialog) {
+        NoticeDialog(text = stringResource(R.string.tips_whitelist_magisk)) {
+            isShowAlterDialog = false
+            context.sp.hasReadNotice2 = true
+        }
+    }
+}
+
+@Composable
 fun AddHiddenAppsContent(
     appInfoList: List<AppInfo>,
     hiddenAppList: Set<String>,
     searchText: String,
+    isLoading: Boolean,
     showSystemApps: Boolean,
     actions: AddHiddenAppsActions
 ) {
@@ -92,7 +119,7 @@ fun AddHiddenAppsContent(
             })
         LoadingBox(
             modifier = Modifier.fillMaxSize(),
-            showLoading = appInfoList.isEmpty()
+            showLoading = isLoading
         ) {
             LazyColumn(content = {
                 items(appInfoList) { appInfo ->
@@ -150,7 +177,8 @@ fun AddHiddenAppsScreenPreview() {
         emptySet(),
         searchText = "",
         showSystemApps = false,
-        actions
+        isLoading = false,
+        actions = actions
     )
 }
 

@@ -9,6 +9,7 @@ import cn.geektang.privacyspace.ConfigConstant
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.util.AppHelper
 import cn.geektang.privacyspace.util.AppHelper.getPackageInfo
+import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
 import cn.geektang.privacyspace.util.AppHelper.loadAllAppList
 import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
@@ -20,12 +21,13 @@ import java.util.*
 
 class AddHiddenAppsViewModel(private val context: Application) : AndroidViewModel(context) {
     val appInfoListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
-    private val allAppInfoListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
+    val allAppInfoListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
     val hiddenAppListFlow = MutableStateFlow<Set<String>>(emptySet())
     val isShowSystemAppsFlow = MutableStateFlow(false)
     val searchTextFlow = MutableStateFlow("")
     private var isModified = false
     private val connectedAppsCache = mutableMapOf<String, Set<String>>()
+    private val sharedUserIdMap = mutableMapOf<String, String>()
 
     init {
         viewModelScope.launch {
@@ -34,6 +36,9 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
                     hiddenAppListFlow.value = it.hiddenAppList.toSet()
                     connectedAppsCache.clear()
                     connectedAppsCache.putAll(it.connectedApps)
+                    val sharedUserIdMapNew = it.sharedUserIdMap ?: emptyMap()
+                    sharedUserIdMap.clear()
+                    sharedUserIdMap.putAll(sharedUserIdMapNew)
                 }
             }
             loadAllAppList(context)
@@ -68,6 +73,11 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
     }
 
     fun addApp2HiddenList(appInfo: AppInfo) {
+        val targetSharedUserId = appInfo.getSharedUserId(context)
+        if (!targetSharedUserId.isNullOrEmpty()) {
+            sharedUserIdMap[appInfo.packageName] = targetSharedUserId
+        }
+
         val hiddenAppList = hiddenAppListFlow.value.toMutableSet()
         hiddenAppList.add(appInfo.packageName)
         hiddenAppListFlow.value = hiddenAppList
@@ -114,9 +124,9 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
     fun tryUpdateConfig() {
         if (isModified) {
             ConfigHelper.updateHiddenListAndConnectedApps(
-                context,
                 hiddenAppListFlow.value,
-                connectedAppsCache
+                connectedAppsCache,
+                sharedUserIdMap
             )
             isModified = false
         }

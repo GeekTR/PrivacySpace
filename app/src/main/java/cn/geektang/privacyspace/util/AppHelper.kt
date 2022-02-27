@@ -5,11 +5,12 @@ import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.net.Uri
+import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.ui.screen.launcher.isXposedModule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
 
 object AppHelper {
     suspend fun Context.loadAllAppList(): List<AppInfo> {
@@ -85,6 +86,20 @@ object AppHelper {
         }
     }
 
+    fun Context.getApkInstallerPackageName(): String? {
+        val uri = Uri.fromParts("package", BuildConfig.APPLICATION_ID, null)
+        val intent = Intent(Intent.ACTION_DELETE, uri)
+        val res = packageManager.resolveActivity(intent, PackageManager.MATCH_UNINSTALLED_PACKAGES)
+        if (res?.activityInfo == null) {
+            return null
+        }
+        return if (res.activityInfo.packageName == "android") {
+            null
+        } else {
+            res.activityInfo.packageName
+        }
+    }
+
     fun getXposedModuleScopeList(context: Context, app: ApplicationInfo): List<String> {
         val pm = context.packageManager
         val scopeList = mutableListOf<String>()
@@ -115,5 +130,11 @@ object AppHelper {
         } catch (e: PackageManager.NameNotFoundException) {
             null
         }
+    }
+
+    fun AppInfo.getSharedUserId(context: Context): String? {
+        val packageInfo =
+            getPackageInfo(context, packageName, PackageManager.MATCH_UNINSTALLED_PACKAGES)
+        return packageInfo?.sharedUserId
     }
 }

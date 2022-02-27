@@ -1,10 +1,14 @@
 package cn.geektang.privacyspace.hook.impl
 
+import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
+import android.os.Binder
 import cn.geektang.privacyspace.hook.Hooker
+import cn.geektang.privacyspace.util.ConfigHelper.getPackageName
+import cn.geektang.privacyspace.util.HookUtil
 import cn.geektang.privacyspace.util.tryLoadClass
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
-import de.robv.android.xposed.XposedHelpers
 import java.lang.reflect.Method
 
 object FrameworkHookerApi26Impl : XC_MethodHook(), Hooker {
@@ -14,8 +18,7 @@ object FrameworkHookerApi26Impl : XC_MethodHook(), Hooker {
 
     override fun start(classLoader: ClassLoader) {
         try {
-            pmsClass =
-                classLoader.tryLoadClass("com.android.server.pm.PackageManagerService")
+            pmsClass = HookUtil.loadPms(classLoader) ?: throw PackageManager.NameNotFoundException()
             packageSettingClass =
                 classLoader.tryLoadClass("com.android.server.pm.PackageSetting")
             getPackageNameForUidMethod = pmsClass.getDeclaredMethod(
@@ -24,23 +27,62 @@ object FrameworkHookerApi26Impl : XC_MethodHook(), Hooker {
             )
             getPackageNameForUidMethod.isAccessible = true
         } catch (e: Throwable) {
-            XposedBridge.log("pmsClass加载失败")
+            XposedBridge.log("pmsClass load failed.")
             XposedBridge.log(e)
             return
         }
 
-        XposedHelpers.findAndHookMethod(
-            pmsClass,
-            "filterSharedLibPackageLPr",
-            packageSettingClass,
-            Int::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType,
-            Int::class.javaPrimitiveType,
-            this
-        )
+        pmsClass.declaredMethods.forEach { method ->
+            when (method.name) {
+                "filterSharedLibPackageLPr" -> {
+                    if (method.parameterCount == 4) {
+                        XposedBridge.hookMethod(method, this)
+                    }
+                }
+                "applyPostResolutionFilter" -> {
+                    XposedBridge.hookMethod(method, this)
+                }
+                else -> {}
+            }
+        }
     }
 
     override fun afterHookedMethod(param: MethodHookParam) {
+        when (param.method.name) {
+            "filterSharedLibPackageLPr" -> {
+                hookFilterSharedLibPackageLPr(param)
+            }
+            "applyPostResolutionFilter" -> {
+                hookApplyPostResolutionFilter(param)
+            }
+        }
+    }
+
+    private fun hookApplyPostResolutionFilter(param: MethodHookParam) {
+        val resultList = param.result as? MutableList<*> ?: return
+        val callingPackageName =
+            getPackageNameForUidMethod.invoke(param.thisObject, Binder.getCallingUid())
+                ?.toString()?.split(":")?.first() ?: return
+        val waitRemoveList = mutableListOf<ResolveInfo>()
+        for (resolveInfo in resultList) {
+            val targetPackageName = (resolveInfo as? ResolveInfo)?.getPackageName() ?: continue
+            val shouldIntercept = HookChecker.shouldIntercept(
+                targetPackageName,
+                callingPackageName
+            )
+            if (shouldIntercept) {
+                waitRemoveList.add(resolveInfo)
+            }
+        }
+        for (resolveInfo in waitRemoveList) {
+            resultList.remove(resolveInfo)
+        }
+        if (waitRemoveList.isNotEmpty()) {
+            param.result = resultList
+        }
+    }
+
+    private fun hookFilterSharedLibPackageLPr(param: MethodHookParam) {
         if (param.result == true) {
             return
         }

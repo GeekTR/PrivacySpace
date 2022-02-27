@@ -2,17 +2,16 @@ package cn.geektang.privacyspace.ui.screen.setconnectedapps
 
 import android.app.Application
 import android.content.pm.PackageManager
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.ConfigConstant
 import cn.geektang.privacyspace.bean.AppInfo
+import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
 import cn.geektang.privacyspace.util.AppHelper.loadAllAppList
 import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.setDifferentValue
-import com.android.server.connectivity.PacManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collect
@@ -25,13 +24,14 @@ class SetConnectedAppsViewModel(
     savedStateHandle: SavedStateHandle
 ) : AndroidViewModel(context) {
     private val targetPackageName = savedStateHandle.get<String>("targetPackageName")
-    private val allAppListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
+    val allAppListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
     val appNameFlow = MutableStateFlow("")
     val appListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
     val whitelistFlow = MutableStateFlow<Set<String>>(emptySet())
     val showSystemAppsFlow = MutableStateFlow(false)
     val searchTextFlow = MutableStateFlow("")
     private var isModified = false
+    private val sharedUserIdMap = mutableMapOf<String, String>()
 
     init {
         viewModelScope.launch {
@@ -53,6 +53,10 @@ class SetConnectedAppsViewModel(
                 ConfigHelper.configDataFlow.collect {
                     whitelistFlow.value = ConfigHelper.configDataFlow
                         .value.connectedApps[targetPackageName] ?: emptySet()
+                    val sharedUserIdMapNew =
+                        ConfigHelper.configDataFlow.value.sharedUserIdMap ?: emptyMap()
+                    sharedUserIdMap.clear()
+                    sharedUserIdMap.putAll(sharedUserIdMapNew)
                 }
             }
 
@@ -60,7 +64,7 @@ class SetConnectedAppsViewModel(
             allAppListFlow.value =
                 context.loadAllAppList()
                     .filter {
-                        !defaultWhitelist.contains(it.packageName)
+                        !defaultWhitelist.contains(it.packageName) && targetPackageName != it.packageName
                     }
                     .sortApps(context = context, toTopCollections = whitelistFlow.value)
             updateAppInfoListFlow()
@@ -88,6 +92,10 @@ class SetConnectedAppsViewModel(
     }
 
     fun addApp2HiddenList(appInfo: AppInfo) {
+        val sharedUserId = appInfo.getSharedUserId(context)
+        if (!sharedUserId.isNullOrEmpty()) {
+            sharedUserIdMap[appInfo.packageName] = sharedUserId
+        }
         isModified = true
         val whitelistNew = whitelistFlow.value.toMutableSet()
         whitelistNew.add(appInfo.packageName)
@@ -106,7 +114,7 @@ class SetConnectedAppsViewModel(
         if (isModified && !targetPackageName.isNullOrEmpty()) {
             val connectedAppsNew = ConfigHelper.configDataFlow.value.connectedApps.toMutableMap()
             connectedAppsNew[targetPackageName] = whitelistFlow.value
-            ConfigHelper.updateConnectedApps(context, connectedAppsNew)
+            ConfigHelper.updateConnectedApps(connectedAppsNew, sharedUserIdMap)
             isModified = false
         }
     }
