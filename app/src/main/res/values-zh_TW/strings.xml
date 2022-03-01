@@ -1,0 +1,34 @@
+﻿<resources>
+    <string name="app_name">隱秘空間</string>
+    <string name="menu">選單</string>
+    <string name="set_white_list">設定白名單</string>
+    <string name="display_system_apps">顯示系統App</string>
+    <string name="add_hidden_apps">新增隱藏的App</string>
+    <string name="reboot_desktop">重啟桌面</string>
+    <string name="reboot_system">重啟系統</string>
+    <string name="loading">載入中...</string>
+    <string name="set_connected_apps">設定關聯應用</string>
+    <string name="tips">提示</string>
+    <string name="launcher_notice_cancel">廢話太多了，跳過</string>
+    <string name="launcher_notice_confirm">朕已仔細閱讀</string>
+    <string name="app_is_uninstalled">%s已解除安裝</string>
+    <string name="uninstall">解除安裝</string>
+    <string name="unhide">取消隱藏</string>
+    <string name="launcher_notice">1、如已啟用Magisk隨機包名，請務必將其加入白名單，否則隱藏的應用將無法正確獲取到 Root 許可權\n2、從老版本升級後務必重啟一次手機，否則功能將失效\n3、本頁面圖示長按可以設定\"關聯應用\"，關聯應用與被設定應用間互相可見\n4、Xposed 模組會在新增後自動將其推薦的 APP 加入\"關聯應用\"\n5、不建議隱藏系統應用，隱藏系統應用可能導致系統無法開機</string>
+    <string name="setting_up_for">正在為\'%s\'設定關聯應用，關聯應用與\'%s\'之間互相可見</string>
+    <string name="current_app_version">檢視當前版本</string>
+    <string name="current_app_version_is">當前版本為：%s</string>
+    <string name="view_update_info_coolapk">檢視更新訊息（酷安）</string>
+    <string name="view_update_info_github">檢視更新訊息（github）</string>
+    <string name="Coolapk_not_found">似乎沒有安裝酷安app</string>
+    <string name="xposeddescription">將 App\"移動\"到另一個空間</string>
+    <string name="retry">重試</string>
+    <string name="tips_go_active">模組未生效</string>
+    <string name="tips_restart_to_active">模組未生效，您可能需要：\n1、啟動本模組；\n2、重啟手機。</string>
+    <string name="back">返回</string>
+    <string name="search">搜尋...</string>
+    <string name="clear">清空</string>
+    <string name="desktop_restart_successfully">桌面重啟成功!</string>
+    <string name="desktop_restart_failed">桌面重啟失敗...</string>
+    <string name="tips_whitelist_magisk">不要忘記將 Magisk 加入白名單 (如果開啟了 Magisk 隨機包名功能的話)</string>
+</resources>
