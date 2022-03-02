@@ -2,7 +2,7 @@ package cn.geektang.privacyspace.hook.impl
 
 import cn.geektang.privacyspace.ConfigConstant
 import cn.geektang.privacyspace.hook.HookMain
-import de.robv.android.xposed.XposedBridge
+import cn.geektang.privacyspace.util.XLog
 
 object HookChecker {
     fun shouldIntercept(
@@ -13,7 +13,6 @@ object HookChecker {
         val shouldFilterAppList = HookMain.hiddenAppList
         val userWhitelist = HookMain.whitelist
         val connectedAppsInfoMap = HookMain.connectedApps
-        val enableLog = HookMain.enableLog
         val defaultWhitelist = ConfigConstant.defaultWhitelist
 
         if (callingPackageName != targetPackageName
@@ -25,14 +24,10 @@ object HookChecker {
                 && connectedAppsInfoMap[callingPackageName]?.contains(targetPackageName) != true
                 && connectedAppsInfoMap[targetPackageName]?.contains(callingPackageName) != true
             ) {
-                if (enableLog) {
-                    XposedBridge.log("$callingPackageName was prevented from reading ${targetPackageName}.")
-                }
+                XLog.d("$callingPackageName was prevented from reading ${targetPackageName}.")
                 result = true
             } else {
-                if (enableLog) {
-                    XposedBridge.log("$callingPackageName read ${targetPackageName}.")
-                }
+                XLog.d("$callingPackageName read ${targetPackageName}.")
             }
         }
         return result

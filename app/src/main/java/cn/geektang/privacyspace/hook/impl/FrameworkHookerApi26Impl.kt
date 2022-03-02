@@ -6,6 +6,7 @@ import android.os.Binder
 import cn.geektang.privacyspace.hook.Hooker
 import cn.geektang.privacyspace.util.ConfigHelper.getPackageName
 import cn.geektang.privacyspace.util.HookUtil
+import cn.geektang.privacyspace.util.XLog
 import cn.geektang.privacyspace.util.tryLoadClass
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
@@ -27,8 +28,7 @@ object FrameworkHookerApi26Impl : XC_MethodHook(), Hooker {
             )
             getPackageNameForUidMethod.isAccessible = true
         } catch (e: Throwable) {
-            XposedBridge.log("pmsClass load failed.")
-            XposedBridge.log(e)
+            XLog.e(e, "pmsClass load failed.")
             return
         }
 

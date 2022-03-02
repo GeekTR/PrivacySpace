@@ -7,6 +7,7 @@ import android.os.UserHandle
 import cn.geektang.privacyspace.hook.Hooker
 import cn.geektang.privacyspace.util.ConfigHelper.getPackageName
 import cn.geektang.privacyspace.util.HookUtil
+import cn.geektang.privacyspace.util.XLog
 import cn.geektang.privacyspace.util.tryLoadClass
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
@@ -42,8 +43,7 @@ object FrameworkHookerApi28Impl : XC_MethodHook(), Hooker {
             getAppIdMethod.isAccessible = true
             getSettingLPrMethod.isAccessible = true
         } catch (e: Throwable) {
-            XposedBridge.log("pmsClass加载失败")
-            XposedBridge.log(e)
+            XLog.e(e, "pms load failed.")
             return
         }
         pmsClass.declaredMethods.forEach { method ->

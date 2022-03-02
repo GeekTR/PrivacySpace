@@ -22,6 +22,7 @@ object ConfigConstant {
         "com.miui.packageinstaller",
         "com.android.packageinstaller",
         "com.google.android.packageinstaller",
+        "com.google.android.providers.media.module",
         BuildConfig.APPLICATION_ID
     )
 }

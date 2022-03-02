@@ -106,7 +106,7 @@ object ConfigHelper {
         return try {
             JsonHelper.getConfigAdapter().fromJson(configFile.readText())
         } catch (e: Throwable) {
-            XposedBridge.log(e)
+            XLog.e(e, "ConfigHelper loadConfigWithSystemApp failed.")
             null
         }
     }

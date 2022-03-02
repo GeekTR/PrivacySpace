@@ -30,11 +30,11 @@ android {
     }
     buildTypes {
         debug {
-            buildConfigField('String', 'APP_CENTER_SECRET', "\"${rootProject.property("AppCenterSecret")}\"")
+            buildConfigField('String', 'APP_CENTER_SECRET', "\"${System.env.Space_AppCenterSecret}\"")
             signingConfig signingConfigs.release
         }
         release {
-            buildConfigField('String', 'APP_CENTER_SECRET', "\"${rootProject.property("AppCenterSecret")}\"")
+            buildConfigField('String', 'APP_CENTER_SECRET', "\"${System.env.Space_AppCenterSecret}\"")
             minifyEnabled false
             signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

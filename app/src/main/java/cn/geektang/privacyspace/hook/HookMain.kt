@@ -11,8 +11,8 @@ import cn.geektang.privacyspace.hook.impl.SpecialAppsHookerImpl
 import cn.geektang.privacyspace.util.AppHelper
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.ConfigServer
+import cn.geektang.privacyspace.util.XLog
 import de.robv.android.xposed.IXposedHookLoadPackage
-import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import java.io.File
 
@@ -44,7 +44,7 @@ class HookMain : IXposedHookLoadPackage {
             private set
 
         fun updateConfigData(data: ConfigData) {
-            enableLog = data.enableLog
+            enableLog = data.enableDetailLog
             hiddenAppList = data.hiddenAppList
             val sharedUserIdMap = data.sharedUserIdMap
             val whitelistTmp = data.whitelist.toMutableSet()
@@ -112,9 +112,7 @@ class HookMain : IXposedHookLoadPackage {
                     override fun onEvent(event: Int, path: String?) {
                         if (event == CLOSE_WRITE && path == ConfigConstant.CONFIG_FILE_JSON) {
                             loadConfigDataAndParse()
-                            if (configData.enableLog) {
-                                XposedBridge.log("$packageName reload config.json")
-                            }
+                            XLog.i("$packageName reload config.json")
                         }
                     }
                 }
