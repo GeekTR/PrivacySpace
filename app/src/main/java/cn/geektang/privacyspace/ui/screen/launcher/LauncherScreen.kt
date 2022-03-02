@@ -44,6 +44,7 @@ import cn.geektang.privacyspace.ui.widget.PopupMenu
 import cn.geektang.privacyspace.util.*
 import cn.geektang.privacyspace.util.AppHelper.getLauncherPackageName
 import coil.compose.rememberImagePainter
+import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
 
 
@@ -258,6 +259,7 @@ private fun PopupMenuContent(isPopupMenuShow: MutableState<Boolean>, loadStatus:
             .width(IntrinsicSize.Max)
     ) {
         val context = LocalContext.current
+        val scope = rememberCoroutineScope()
         PopupItem(text = stringResource(id = R.string.set_white_list)) {
             if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
                 context.showToast(context.getString(R.string.tips_go_active))
@@ -275,18 +277,14 @@ private fun PopupMenuContent(isPopupMenuShow: MutableState<Boolean>, loadStatus:
             navController.navigate(RouteConstant.ADD_HIDDEN_APPS)
         }
         PopupItem(text = stringResource(R.string.reboot_desktop)) {
-            if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
-                context.showToast(context.getString(R.string.tips_go_active))
-                return@PopupItem
-            }
-
             isPopupMenuShow.value = false
-            val isSucceed =
-                ConfigHelper.forceStop(context.getLauncherPackageName() ?: "com.miui.home")
-            if (isSucceed) {
-                context.showToast(context.getString(R.string.desktop_restart_successfully))
-            } else {
-                context.showToast(context.getString(R.string.desktop_restart_failed))
+            scope.launch {
+                val isSucceed = Su.exec("am force-stop ${context.getLauncherPackageName() ?: "com.miui.home"}")
+                if (isSucceed) {
+                    context.showToast(context.getString(R.string.desktop_restart_successfully))
+                } else {
+                    context.showToast(context.getString(R.string.desktop_restart_failed))
+                }
             }
         }
         PopupItem(text = stringResource(R.string.reboot_system)) {

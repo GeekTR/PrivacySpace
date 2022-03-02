@@ -163,10 +163,6 @@ object ConfigHelper {
         configClient.rebootTheSystem()
     }
 
-    fun forceStop(packageName: String): Boolean {
-        return configClient.forceStop(packageName)
-    }
-
     fun ResolveInfo.getPackageName(): String? {
         var packageName = activityInfo?.packageName
         if (packageName.isNullOrEmpty()) {

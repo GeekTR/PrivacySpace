@@ -46,10 +46,6 @@ class ConfigClient(context: Context) {
         }
     }
 
-    fun forceStop(packageName: String): Boolean {
-        return connectServer("${ConfigServer.FORCE_STOP}$packageName") == ConfigServer.EXEC_SUCCEED
-    }
-
     private fun connectServer(methodName: String): String? {
         return try {
             packageManager.getInstallerPackageName(methodName)

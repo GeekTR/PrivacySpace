@@ -8,6 +8,7 @@ import cn.geektang.privacyspace.hook.impl.FrameworkHookerApi26Impl
 import cn.geektang.privacyspace.hook.impl.FrameworkHookerApi28Impl
 import cn.geektang.privacyspace.hook.impl.FrameworkHookerApi30Impl
 import cn.geektang.privacyspace.hook.impl.SpecialAppsHookerImpl
+import cn.geektang.privacyspace.util.AppHelper
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.ConfigServer
 import de.robv.android.xposed.IXposedHookLoadPackage
@@ -65,6 +66,11 @@ class HookMain : IXposedHookLoadPackage {
                         }
                     }
                     connectedAppsNew[it.key] = newSet
+
+                    val keySharedUserId = sharedUserIdMap[it.key]
+                    if (!keySharedUserId.isNullOrEmpty()) {
+                        connectedAppsNew[keySharedUserId] = newSet
+                    }
                 }
                 connectedAppsTpm.putAll(connectedAppsNew)
             }
@@ -90,7 +96,7 @@ class HookMain : IXposedHookLoadPackage {
                     FrameworkHookerApi26Impl.start(classLoader)
                 }
             }
-        } else {
+        } else if (AppHelper.isSystemApp(lpparam.appInfo)) {
             loadConfigDataAndParse()
             startWatchingConfigFiles()
             SpecialAppsHookerImpl.start(classLoader)

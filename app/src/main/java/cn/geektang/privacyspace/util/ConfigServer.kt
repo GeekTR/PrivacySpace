@@ -1,10 +1,7 @@
 package cn.geektang.privacyspace.util
 
 import android.app.ActivityThread
-import android.app.IActivityManager
-import android.content.pm.PackageManager
 import android.os.Binder
-import android.os.ServiceManager
 import android.os.SystemProperties
 import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.ConfigConstant
@@ -21,22 +18,15 @@ class ConfigServer : XC_MethodHook() {
         const val QUERY_CONFIG = "queryConfig"
         const val UPDATE_CONFIG = "updateConfig:"
         const val REBOOT_THE_SYSTEM = "rebootTheSystem"
-        const val FORCE_STOP = "forceStop:"
 
         const val EXEC_SUCCEED = "1"
         const val EXEC_FAILED = "0"
     }
 
-    private var amsClass: Class<*>? = null
     private var pmsClass: Class<*>? = null
 
     fun start(classLoader: ClassLoader) {
         pmsClass = HookUtil.loadPms(classLoader)
-        amsClass = try {
-            classLoader.tryLoadClass("com.android.server.am.ActivityManagerService")
-        } catch (e: ClassNotFoundException) {
-            null
-        }
         if (pmsClass == null) {
             XposedBridge.log("PackageManagerService not found, config server start failed.")
             return
@@ -48,47 +38,12 @@ class ConfigServer : XC_MethodHook() {
             String::class.java,
             this
         )
-
-        XposedHelpers.findAndHookMethod(
-            pmsClass,
-            "checkUidPermission",
-            String::class.java,
-            Int::class.javaPrimitiveType,
-            this
-        )
-
-        if (amsClass != null) {
-            XposedHelpers.findAndHookMethod(
-                amsClass,
-                "checkPermission",
-                String::class.java,
-                Int::class.javaPrimitiveType,
-                Int::class.javaPrimitiveType,
-                this
-            )
-        }
     }
 
     override fun beforeHookedMethod(param: MethodHookParam) {
         when (param.method.name) {
             "getInstallerPackageName" -> {
                 hookGetInstallerPackageName(param)
-            }
-            "checkUidPermission" -> {
-                if (param.args[1] == getClientUid()) {
-                    if (HookMain.enableLog) {
-                        XposedBridge.log("Granted permission by hook.")
-                    }
-                    param.result = PackageManager.PERMISSION_GRANTED
-                }
-            }
-            "checkPermission" -> {
-                if (param.args[2] == getClientUid()) {
-                    if (HookMain.enableLog) {
-                        XposedBridge.log("Granted permission by hook.")
-                    }
-                    param.result = PackageManager.PERMISSION_GRANTED
-                }
             }
             else -> {}
         }
@@ -113,18 +68,6 @@ class ConfigServer : XC_MethodHook() {
             firstArg == REBOOT_THE_SYSTEM -> {
                 SystemProperties.set("sys.powerctl", "reboot")
                 param.result = ""
-            }
-            firstArg.startsWith(FORCE_STOP) -> {
-                val targetPackageName = firstArg.substring(FORCE_STOP.length)
-                try {
-                    val activityManager = ServiceManager.getService("activity") as IActivityManager
-                    activityManager.forceStopPackage(targetPackageName, 0)
-                    param.result = EXEC_SUCCEED
-                } catch (e: Throwable) {
-                    XposedBridge.log("Force stop '${targetPackageName}' error.")
-                    XposedBridge.log(e)
-                    param.result = EXEC_FAILED
-                }
             }
             firstArg.startsWith(UPDATE_CONFIG) -> {
                 val arg = firstArg.substring(UPDATE_CONFIG.length)

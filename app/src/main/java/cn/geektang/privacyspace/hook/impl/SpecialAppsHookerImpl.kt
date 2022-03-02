@@ -25,16 +25,17 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
                 "getInstalledPackages",
                 "getInstalledApplications",
                 "getInstalledModules",
-                "queryIntentActivities",
-                "queryIntentActivityOptions",
-                "queryBroadcastReceivers",
-                "queryIntentServices",
-                "queryIntentContentProviders",
-                "resolveService",
-                "resolveActivity",
-                "resolveContentProvider",
-                "queryContentProviders",
-                "getPackageInfo"
+                //TODO More testing is needed here
+//                "queryIntentActivities",
+//                "queryIntentActivityOptions",
+//                "queryBroadcastReceivers",
+//                "queryIntentServices",
+//                "queryIntentContentProviders",
+//                "resolveService",
+//                "resolveActivity",
+//                "resolveContentProvider",
+//                "queryContentProviders",
+//                "getPackageInfo"
             )
         packageManagerClass.declaredMethods.forEach {
             if (hookMethodSet.contains(it.name)) {
@@ -42,25 +43,26 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
             }
         }
 
-        XposedHelpers.findAndHookMethod(
-            ActivityManager::class.java,
-            "getRunningAppProcesses",
-            object : XC_MethodHook() {
-                override fun afterHookedMethod(param: MethodHookParam) {
-                    val result = param.result as? List<*> ?: return
-                    val shouldFilterAppList = HookMain.hiddenAppList
-                    param.result = result.filter {
-                        it as ActivityManager.RunningAppProcessInfo
-                        var shouldFilter = false
-                        it.pkgList.forEach {
-                            if (shouldFilterAppList.contains(it)) {
-                                shouldFilter = true
-                            }
-                        }
-                        !shouldFilter
-                    }
-                }
-            })
+        //TODO More testing is needed here
+//        XposedHelpers.findAndHookMethod(
+//            ActivityManager::class.java,
+//            "getRunningAppProcesses",
+//            object : XC_MethodHook() {
+//                override fun afterHookedMethod(param: MethodHookParam) {
+//                    val result = param.result as? List<*> ?: return
+//                    val shouldFilterAppList = HookMain.hiddenAppList
+//                    param.result = result.filter {
+//                        it as ActivityManager.RunningAppProcessInfo
+//                        var shouldFilter = false
+//                        it.pkgList.forEach {
+//                            if (shouldFilterAppList.contains(it)) {
+//                                shouldFilter = true
+//                            }
+//                        }
+//                        !shouldFilter
+//                    }
+//                }
+//            })
     }
 
     override fun afterHookedMethod(param: MethodHookParam) {
