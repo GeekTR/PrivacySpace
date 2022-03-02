@@ -50,7 +50,7 @@ class ConfigServer : XC_MethodHook() {
     }
 
     private fun hookGetInstallerPackageName(param: MethodHookParam) {
-        if (Binder.getCallingUid() != getClientUid() && !BuildConfig.DEBUG) {
+        if (Binder.getCallingUid() != getClientUid()) {
             return
         }
         val firstArg = param.args.first()?.toString() ?: return
@@ -104,8 +104,13 @@ class ConfigServer : XC_MethodHook() {
     }
 
     private fun getClientUid(): Int {
-        return ActivityThread.getPackageManager()
-            .getPackageUid(BuildConfig.APPLICATION_ID, 0, 0)
+        return try {
+            ActivityThread.getPackageManager()
+                .getPackageUid(BuildConfig.APPLICATION_ID, 0, 0)
+        } catch (e: Throwable) {
+            XposedBridge.log(e)
+            -1
+        }
     }
 
     private fun tryMigrateOldConfig() {
