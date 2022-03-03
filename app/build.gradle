@@ -22,12 +22,13 @@ android {
 
     signingConfigs {
         release {
-            keyAlias rootProject.property("keyAlias").toString()
-            keyPassword rootProject.property("keyPassword").toString()
-            storeFile file(rootProject.property("storeFile").toString())
-            storePassword rootProject.property("storePassword").toString()
+            keyAlias System.env.Space_keyAlias
+            keyPassword System.env.Space_keyPassword
+            storeFile file(System.env.Space_storeFile)
+            storePassword System.env.Space_storePassword
         }
     }
+
     buildTypes {
         debug {
             buildConfigField('String', 'APP_CENTER_SECRET', "\"${System.env.Space_AppCenterSecret}\"")
