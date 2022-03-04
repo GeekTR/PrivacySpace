@@ -15,11 +15,9 @@ import kotlinx.coroutines.withContext
 object AppHelper {
     suspend fun Context.loadAllAppList(): List<AppInfo> {
         return withContext(Dispatchers.IO) {
-            val flag =
-                PackageManager.MATCH_UNINSTALLED_PACKAGES
             val packageManager = packageManager
             return@withContext packageManager
-                .getInstalledApplications(flag)
+                .getInstalledApplications(PackageManager.MATCH_UNINSTALLED_PACKAGES)
                 .mapNotNull { applicationInfo ->
                     val appName = applicationInfo.loadLabel(packageManager).toString()
                     val appIcon = applicationInfo.loadIcon(packageManager)

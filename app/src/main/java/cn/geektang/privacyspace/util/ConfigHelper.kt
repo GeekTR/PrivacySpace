@@ -7,8 +7,8 @@ import android.content.IntentFilter
 import android.content.pm.ResolveInfo
 import cn.geektang.privacyspace.ConfigConstant
 import cn.geektang.privacyspace.bean.ConfigData
+import cn.geektang.privacyspace.bean.SystemUserInfo
 import cn.geektang.privacyspace.util.AppHelper.getApkInstallerPackageName
-import de.robv.android.xposed.XposedBridge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -104,7 +104,7 @@ object ConfigHelper {
         val configFile =
             File("${ConfigConstant.CONFIG_FILE_FOLDER}${ConfigConstant.CONFIG_FILE_JSON}")
         return try {
-            JsonHelper.getConfigAdapter().fromJson(configFile.readText())
+            JsonHelper.configAdapter().fromJson(configFile.readText())
         } catch (e: Throwable) {
             XLog.e(e, "ConfigHelper loadConfigWithSystemApp failed.")
             null
@@ -161,6 +161,10 @@ object ConfigHelper {
 
     fun rebootTheSystem() {
         configClient.rebootTheSystem()
+    }
+
+    suspend fun queryAllUsers(): List<SystemUserInfo>? {
+        return configClient.querySystemUserList()
     }
 
     fun ResolveInfo.getPackageName(): String? {
