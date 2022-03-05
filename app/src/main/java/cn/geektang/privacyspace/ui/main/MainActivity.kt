@@ -10,11 +10,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import cn.geektang.privacyspace.RouteConstant
+import cn.geektang.privacyspace.constant.RouteConstant
 import cn.geektang.privacyspace.ui.screen.launcher.LauncherScreen
 import cn.geektang.privacyspace.ui.screen.managehiddenapps.AddHiddenAppsScreen
 import cn.geektang.privacyspace.ui.screen.setconnectedapps.SetConnectedAppsScreen
@@ -28,6 +29,7 @@ import com.google.accompanist.insets.ProvideWindowInsets
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             PrivacySpaceTheme {
                 ProvideWindowInsets {

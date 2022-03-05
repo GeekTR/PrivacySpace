@@ -4,7 +4,7 @@ import android.app.ActivityThread
 import android.os.Binder
 import android.os.SystemProperties
 import cn.geektang.privacyspace.BuildConfig
-import cn.geektang.privacyspace.ConfigConstant
+import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.hook.HookMain
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedHelpers

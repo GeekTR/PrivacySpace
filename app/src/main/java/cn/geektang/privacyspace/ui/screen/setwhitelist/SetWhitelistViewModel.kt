@@ -3,7 +3,7 @@ package cn.geektang.privacyspace.ui.screen.setwhitelist
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import cn.geektang.privacyspace.ConfigConstant
+import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
 import cn.geektang.privacyspace.util.AppHelper.loadAllAppList

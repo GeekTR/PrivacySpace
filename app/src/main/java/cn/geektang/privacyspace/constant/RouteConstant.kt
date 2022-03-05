@@ -1,4 +1,4 @@
-package cn.geektang.privacyspace
+package cn.geektang.privacyspace.constant
 
 object RouteConstant {
     const val LAUNCHER = "launcher"

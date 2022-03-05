@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.bean.AppInfo
-import cn.geektang.privacyspace.ui.screen.launcher.isXposedModule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -136,5 +135,10 @@ object AppHelper {
         val packageInfo =
             getPackageInfo(context, packageName, PackageManager.MATCH_UNINSTALLED_PACKAGES)
         return packageInfo?.sharedUserId
+    }
+
+    fun ApplicationInfo.isXposedModule(): Boolean {
+        return metaData?.getBoolean("xposedmodule") == true ||
+                metaData?.containsKey("xposedminversion") == true
     }
 }

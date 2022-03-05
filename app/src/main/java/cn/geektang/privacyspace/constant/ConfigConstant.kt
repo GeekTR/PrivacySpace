@@ -1,4 +1,6 @@
-package cn.geektang.privacyspace
+package cn.geektang.privacyspace.constant
+
+import cn.geektang.privacyspace.BuildConfig
 
 object ConfigConstant {
     const val ANDROID_FRAMEWORK = "android"

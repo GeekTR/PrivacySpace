@@ -5,10 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ResolveInfo
-import cn.geektang.privacyspace.ConfigConstant
+import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.bean.ConfigData
 import cn.geektang.privacyspace.util.AppHelper.getApkInstallerPackageName
-import de.robv.android.xposed.XposedBridge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow

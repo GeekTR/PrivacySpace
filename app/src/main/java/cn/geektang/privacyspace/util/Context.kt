@@ -28,6 +28,38 @@ var SharedPreferences.hasReadNotice2: Boolean
         edit().putBoolean("readNotice2", value).apply()
     }
 
+var SharedPreferences.iconCellCountLandscape: Int
+    get() {
+        return getInt("iconCellCountLandscape", 8)
+    }
+    set(value) {
+        edit().putInt("iconCellCountLandscape", value).apply()
+    }
+
+var SharedPreferences.iconPaddingLandscape: Float
+    get() {
+        return getFloat("iconPaddingLandscape", 0.5f)
+    }
+    set(value) {
+        edit().putFloat("iconPaddingLandscape", value).apply()
+    }
+
+var SharedPreferences.iconCellCountPortrait: Int
+    get() {
+        return getInt("iconCellPortrait", 4)
+    }
+    set(value) {
+        edit().putInt("iconCellPortrait", value).apply()
+    }
+
+var SharedPreferences.iconPaddingPortrait: Float
+    get() {
+        return getFloat("iconPaddingPortrait", 0.5f)
+    }
+    set(value) {
+        edit().putFloat("iconPaddingPortrait", value).apply()
+    }
+
 fun Context.showToast(text: String) {
     Toast.makeText(
         this,

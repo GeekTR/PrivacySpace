@@ -21,7 +21,7 @@
     <string name="view_update_info_coolapk">View Update Info(Coolapk)</string>
     <string name="view_update_info_github">View Update Info(Github)</string>
     <string name="Coolapk_not_found">Coolapk not found.</string>
-    <string name="xposeddescription">Move apps to another space.</string>
+    <string name="xposeddescription">Hide the app in another space.</string>
     <string name="retry">Retry</string>
     <string name="tips_go_active">The module does not take effect</string>
     <string name="tips_restart_to_active">The module does not take effect, you may need to: \n1. Activate this module;\n2. Restart the System.</string>
@@ -31,4 +31,7 @@
     <string name="desktop_restart_successfully">Desktop restart successfully!</string>
     <string name="desktop_restart_failed">Desktop restart failed…</string>
     <string name="tips_whitelist_magisk">Don\'t forget to whitelist Magisk (if it has random package names enabled)</string>
+    <string name="screen_layout">Screen layout</string>
+    <string name="icon_size">Icon size</string>
+    <string name="icon_size_per_line">%d apps per line</string>
 </resources>

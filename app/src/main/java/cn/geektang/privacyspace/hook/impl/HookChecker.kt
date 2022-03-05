@@ -1,6 +1,6 @@
 package cn.geektang.privacyspace.hook.impl
 
-import cn.geektang.privacyspace.ConfigConstant
+import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.hook.HookMain
 import cn.geektang.privacyspace.util.XLog
 

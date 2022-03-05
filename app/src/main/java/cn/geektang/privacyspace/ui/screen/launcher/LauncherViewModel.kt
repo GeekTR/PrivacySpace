@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.util.AppHelper
 import cn.geektang.privacyspace.util.AppHelper.getPackageInfo
+import cn.geektang.privacyspace.util.AppHelper.isXposedModule
 import cn.geektang.privacyspace.util.ConfigHelper
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
