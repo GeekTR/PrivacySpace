@@ -3,10 +3,10 @@ package cn.geektang.privacyspace.ui.screen.setwhitelist
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.bean.AppInfo
+import cn.geektang.privacyspace.constant.ConfigConstant
+import cn.geektang.privacyspace.util.AppHelper
 import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
-import cn.geektang.privacyspace.util.AppHelper.loadAllAppList
 import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.setDifferentValue
@@ -37,13 +37,12 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
             }
 
             val defaultWhitelist = ConfigConstant.defaultWhitelist
-            allAppListFlow.value =
-                context.loadAllAppList()
-                    .filter {
-                        !defaultWhitelist.contains(it.packageName)
-                    }
-                    .sortApps(context = context, toTopCollections = whitelistFlow.value)
-            updateAppInfoListFlow()
+            AppHelper.allApps.collect { apps ->
+                allAppListFlow.value = apps.filter { app ->
+                    !defaultWhitelist.contains(app.packageName)
+                }.sortApps(context = context, toTopCollections = whitelistFlow.value)
+                updateAppInfoListFlow()
+            }
         }
     }
 

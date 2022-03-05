@@ -34,4 +34,5 @@
     <string name="screen_layout">調整佈局</string>
     <string name="icon_size">圖示大小</string>
     <string name="icon_size_per_line">每行%d個</string>
+    <string name="tips_get_apps_failed">獲取App列表失敗,請授予獲取應用列表權限</string>
 </resources>

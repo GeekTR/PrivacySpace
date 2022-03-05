@@ -1,5 +1,6 @@
 package cn.geektang.privacyspace.util
 
+import android.annotation.StringRes
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -59,6 +60,10 @@ var SharedPreferences.iconPaddingPortrait: Float
     set(value) {
         edit().putFloat("iconPaddingPortrait", value).apply()
     }
+
+fun Context.showToast(@StringRes textRes: Int) {
+    showToast(getString(textRes))
+}
 
 fun Context.showToast(text: String) {
     Toast.makeText(

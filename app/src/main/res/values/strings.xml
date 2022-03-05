@@ -34,4 +34,5 @@
     <string name="screen_layout">Screen layout</string>
     <string name="icon_size">Icon size</string>
     <string name="icon_size_per_line">%d apps per line</string>
+    <string name="tips_get_apps_failed">Failed to get Apps, please grant permission.</string>
 </resources>
