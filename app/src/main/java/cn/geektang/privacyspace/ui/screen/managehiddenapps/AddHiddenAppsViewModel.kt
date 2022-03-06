@@ -40,7 +40,9 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
                     sharedUserIdMap.putAll(sharedUserIdMapNew)
                 }
             }
-            loadAllAppList(context)
+            launch {
+                loadAllAppList(context)
+            }
         }
     }
 

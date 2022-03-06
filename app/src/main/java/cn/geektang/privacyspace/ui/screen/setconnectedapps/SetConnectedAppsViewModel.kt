@@ -60,14 +60,16 @@ class SetConnectedAppsViewModel(
                 }
             }
 
-            val defaultWhitelist = ConfigConstant.defaultWhitelist
-            AppHelper.allApps.collect { apps ->
-                allAppListFlow.value =
-                    apps.filter {
-                        !defaultWhitelist.contains(it.packageName) && targetPackageName != it.packageName
-                    }
-                        .sortApps(context = context, toTopCollections = whitelistFlow.value)
-                updateAppInfoListFlow()
+            launch {
+                val defaultWhitelist = ConfigConstant.defaultWhitelist
+                AppHelper.allApps.collect { apps ->
+                    allAppListFlow.value =
+                        apps.filter {
+                            !defaultWhitelist.contains(it.packageName) && targetPackageName != it.packageName
+                        }
+                            .sortApps(context = context, toTopCollections = whitelistFlow.value)
+                    updateAppInfoListFlow()
+                }
             }
         }
     }

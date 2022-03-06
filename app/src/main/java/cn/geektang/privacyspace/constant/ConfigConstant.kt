@@ -18,6 +18,7 @@ object ConfigConstant {
         "android.uid.phone",
         "com.topjohnwu.magisk",
         "android.uid.nfc",
+        "android.uid.bluetooth",
         "android.uid.systemui",
         "android.uid.networkstack",
         "com.google.uid.shared",

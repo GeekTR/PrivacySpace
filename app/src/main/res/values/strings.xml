@@ -1,13 +1,13 @@
 <resources>
     <string name="app_name">PrivacySpace</string>
     <string name="menu">Menu</string>
-    <string name="set_white_list">Set Whitelist</string>
-    <string name="display_system_apps">Show System APPs</string>
-    <string name="add_hidden_apps">Add Hidden Apps</string>
-    <string name="reboot_desktop">Restart Desktop</string>
-    <string name="reboot_system">Restart System</string>
+    <string name="set_white_list">Set whitelist</string>
+    <string name="display_system_apps">Show system apps</string>
+    <string name="add_hidden_apps">Add hidden apps</string>
+    <string name="reboot_desktop">Restart desktop</string>
+    <string name="reboot_system">Restart system</string>
     <string name="loading">Loading…</string>
-    <string name="set_connected_apps">Set Connected Apps</string>
+    <string name="set_connected_apps">Connected with others</string>
     <string name="tips">Tips</string>
     <string name="launcher_notice_cancel">Cancel</string>
     <string name="launcher_notice_confirm">Confirm</string>
@@ -20,7 +20,7 @@
     <string name="current_app_version_is">Current app version is v%s</string>
     <string name="view_update_info_coolapk">View Update Info(Coolapk)</string>
     <string name="view_update_info_github">View Update Info(Github)</string>
-    <string name="Coolapk_not_found">Coolapk not found.</string>
+    <string name="coolapk_not_found">Coolapk not found.</string>
     <string name="xposeddescription">Hide the app in another space.</string>
     <string name="retry">Retry</string>
     <string name="tips_go_active">The module does not take effect</string>
@@ -35,4 +35,6 @@
     <string name="icon_size">Icon size</string>
     <string name="icon_size_per_line">%d apps per line</string>
     <string name="tips_get_apps_failed">Failed to get Apps, please grant permission.</string>
+    <string name="connect_with_desktop">Connect with desktop</string>
+    <string name="disconnect_with_desktop">Disconnect with desktop</string>
 </resources>

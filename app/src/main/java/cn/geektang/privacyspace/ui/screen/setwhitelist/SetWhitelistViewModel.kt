@@ -35,13 +35,14 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
                     sharedUserIdMap.putAll(sharedUserIdMapNew)
                 }
             }
-
-            val defaultWhitelist = ConfigConstant.defaultWhitelist
-            AppHelper.allApps.collect { apps ->
-                allAppListFlow.value = apps.filter { app ->
-                    !defaultWhitelist.contains(app.packageName)
-                }.sortApps(context = context, toTopCollections = whitelistFlow.value)
-                updateAppInfoListFlow()
+            launch {
+                val defaultWhitelist = ConfigConstant.defaultWhitelist
+                AppHelper.allApps.collect { apps ->
+                    allAppListFlow.value = apps.filter { app ->
+                        !defaultWhitelist.contains(app.packageName)
+                    }.sortApps(context = context, toTopCollections = whitelistFlow.value)
+                    updateAppInfoListFlow()
+                }
             }
         }
     }

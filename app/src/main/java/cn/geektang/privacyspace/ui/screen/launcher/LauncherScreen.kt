@@ -39,6 +39,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.R
 import cn.geektang.privacyspace.bean.AppInfo
+import cn.geektang.privacyspace.bean.ConfigData
 import cn.geektang.privacyspace.constant.RouteConstant
 import cn.geektang.privacyspace.constant.UiSettings
 import cn.geektang.privacyspace.constant.UiSettings.obtainCellContentPaddingRatio
@@ -58,6 +59,7 @@ fun LauncherScreen(
     viewModel: LauncherViewModel = viewModel()
 ) {
     val appList by viewModel.appListFlow.collectAsState(initial = emptyList())
+    val configData by viewModel.configDataFlow.collectAsState(initial = ConfigData.EMPTY)
     val loadStatus by ConfigHelper.loadingStatusFlow.collectAsState()
     val context = LocalContext.current
     val actions = object : LauncherActions {
@@ -69,6 +71,14 @@ fun LauncherScreen(
 
         override fun cancelHide(appInfo: AppInfo) {
             viewModel.cancelHide(appInfo)
+        }
+
+        override fun connectTo(sourceApp: AppInfo, targetApp: String) {
+            viewModel.connectTo(sourceApp, targetApp)
+        }
+
+        override fun disconnectTo(sourceApp: AppInfo, targetApp: String) {
+            viewModel.disconnectTo(sourceApp, targetApp)
         }
     }
 
@@ -82,6 +92,7 @@ fun LauncherScreen(
     }
     LauncherScreenContent(
         appList = appList,
+        configData = configData,
         cellCount = cellCount.value,
         cellContentPaddingRatio = cellContentPaddingRatio.value,
         loadStatus = loadStatus,
@@ -139,6 +150,7 @@ fun LauncherScreen(
 @Composable
 private fun LauncherScreenContent(
     appList: List<AppInfo>,
+    configData: ConfigData,
     cellCount: Int,
     cellContentPaddingRatio: Float,
     loadStatus: Int,
@@ -174,8 +186,19 @@ private fun LauncherScreenContent(
             actions.cancelHide(appInfo)
             isShowPopupMenu.value = false
         }
+
+        override fun connectTo(sourceApp: AppInfo, targetApp: String) {
+            actions.connectTo(sourceApp, targetApp)
+            isShowPopupMenu.value = false
+        }
+
+        override fun disconnectTo(sourceApp: AppInfo, targetApp: String) {
+            actions.disconnectTo(sourceApp, targetApp)
+            isShowPopupMenu.value = false
+        }
     }
-    AppItemPopupMenu(popupMenuAppInfo, popupMenuOffset, isShowPopupMenu, actionsWrapper)
+
+    AppItemPopupMenu(configData, popupMenuAppInfo, popupMenuOffset, isShowPopupMenu, actionsWrapper)
 
     Column {
         TopBar(
@@ -224,6 +247,7 @@ private fun LauncherScreenContent(
 
 @Composable
 private fun AppItemPopupMenu(
+    configData: ConfigData,
     popupMenuAppInfo: AppInfo?,
     popupMenuOffset: Offset?,
     isShowPopupMenu: MutableState<Boolean>,
@@ -242,6 +266,15 @@ private fun AppItemPopupMenu(
                 shape = RoundedCornerShape(5.dp)
             ) {
                 val navController = LocalNavHostController.current
+                val context = LocalContext.current
+                val launcherPackageName = remember {
+                    context.getLauncherPackageName() ?: ""
+                }
+                val isShowDesktopMenu = !configData.whitelist.contains(launcherPackageName)
+                val isHideToDesktop =
+                    configData.connectedApps[popupMenuAppInfo?.packageName ?: ""]?.contains(
+                        launcherPackageName
+                    ) == true
                 Column(
                     modifier = Modifier
                         .padding(vertical = 5.dp)
@@ -253,6 +286,16 @@ private fun AppItemPopupMenu(
                     PopupItem(text = stringResource(R.string.unhide), onClick = {
                         actions.cancelHide(popupMenuAppInfo ?: return@PopupItem)
                     })
+                    if (isShowDesktopMenu) {
+                        val text = if (isHideToDesktop) stringResource(R.string.disconnect_with_desktop) else stringResource(R.string.connect_with_desktop)
+                        PopupItem(text = text, onClick = {
+                            if (isHideToDesktop) {
+                                actions.disconnectTo(popupMenuAppInfo!!, launcherPackageName)
+                            } else {
+                                actions.connectTo(popupMenuAppInfo!!, launcherPackageName)
+                            }
+                        })
+                    }
                     PopupItem(text = stringResource(id = R.string.set_connected_apps), onClick = {
                         navController.navigate("${RouteConstant.SET_CONNECTED_APPS}?targetPackageName=${popupMenuAppInfo?.packageName ?: ""}")
                     })
@@ -356,13 +399,13 @@ private fun PopupMenuContent(
             try {
                 context.openUrl("coolmarket://u/18765870")
             } catch (e: Throwable) {
-                context.showToast(context.getString(R.string.Coolapk_not_found))
+                context.showToast(context.getString(R.string.coolapk_not_found))
             }
 
         })
         PopupItem(text = stringResource(R.string.view_update_info_github), onClick = {
             isPopupMenuShow.value = false
-            context.openUrl("https://github.com/Xposed-Modules-Repo/cn.geektang.privacyspace")
+            context.openUrl("https://github.com/GeekTR/PrivacySpace")
         })
     }
 }
@@ -486,6 +529,7 @@ fun LauncherScreenPreview() {
     )
     LauncherScreenContent(
         appList = listOf(appInfo, appInfo, appInfo, appInfo, appInfo, appInfo),
+        configData = ConfigData.EMPTY,
         cellCount = 4,
         cellContentPaddingRatio = 0.5f,
         ConfigHelper.LOADING_STATUS_SUCCESSFUL,
@@ -508,6 +552,14 @@ interface LauncherActions {
     }
 
     fun cancelHide(appInfo: AppInfo) {
+
+    }
+
+    fun connectTo(sourceApp: AppInfo, targetApp: String) {
+
+    }
+
+    fun disconnectTo(sourceApp: AppInfo, targetApp: String) {
 
     }
 }
