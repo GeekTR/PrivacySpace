@@ -11,8 +11,8 @@ android {
         applicationId "cn.geektang.privacyspace"
         minSdk 26
         targetSdk 32
-        versionCode 15
-        versionName "1.3.2"
+        versionCode 14
+        versionName "1.3.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -20,24 +20,13 @@ android {
         }
     }
 
-    signingConfigs {
-        release {
-            keyAlias System.env.Space_keyAlias
-            keyPassword System.env.Space_keyPassword
-            storeFile file(System.env.Space_storeFile)
-            storePassword System.env.Space_storePassword
-        }
-    }
-
     buildTypes {
         debug {
             buildConfigField('String', 'APP_CENTER_SECRET', "\"${System.env.Space_AppCenterSecret}\"")
-            signingConfig signingConfigs.release
         }
         release {
             buildConfigField('String', 'APP_CENTER_SECRET', "\"${System.env.Space_AppCenterSecret}\"")
             minifyEnabled false
-            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }

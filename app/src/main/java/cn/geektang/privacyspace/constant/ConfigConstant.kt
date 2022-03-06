@@ -1,4 +1,6 @@
-package cn.geektang.privacyspace
+package cn.geektang.privacyspace.constant
+
+import cn.geektang.privacyspace.BuildConfig
 
 object ConfigConstant {
     const val ANDROID_FRAMEWORK = "android"
@@ -16,12 +18,14 @@ object ConfigConstant {
         "android.uid.phone",
         "com.topjohnwu.magisk",
         "android.uid.nfc",
+        "android.uid.bluetooth",
         "android.uid.systemui",
         "android.uid.networkstack",
         "com.google.uid.shared",
         "com.miui.packageinstaller",
         "com.android.packageinstaller",
         "com.google.android.packageinstaller",
+        "com.google.android.providers.media.module",
         BuildConfig.APPLICATION_ID
     )
 }

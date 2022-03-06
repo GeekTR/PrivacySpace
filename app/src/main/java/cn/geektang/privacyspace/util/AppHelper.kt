@@ -1,19 +1,41 @@
 package cn.geektang.privacyspace.util
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import cn.geektang.privacyspace.BuildConfig
+import cn.geektang.privacyspace.R
 import cn.geektang.privacyspace.bean.AppInfo
-import cn.geektang.privacyspace.ui.screen.launcher.isXposedModule
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import cn.geektang.privacyspace.util.AppHelper.loadAllAppList
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlin.jvm.Throws
 
 object AppHelper {
-    suspend fun Context.loadAllAppList(): List<AppInfo> {
+    private val _allApps = MutableStateFlow<List<AppInfo>>(emptyList())
+    val allApps: Flow<List<AppInfo>> = _allApps
+
+    suspend fun initialize(context: Context) {
+        val apps = try {
+            context.loadAllAppList()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            context.showToast(R.string.tips_get_apps_failed)
+            delay(3000)
+            // retry after 3 seconds
+            initialize(context)
+            return
+        }
+        _allApps.emit(apps)
+    }
+
+    private suspend fun Context.loadAllAppList(): List<AppInfo> {
         return withContext(Dispatchers.IO) {
             val flag =
                 PackageManager.MATCH_UNINSTALLED_PACKAGES
@@ -136,5 +158,72 @@ object AppHelper {
         val packageInfo =
             getPackageInfo(context, packageName, PackageManager.MATCH_UNINSTALLED_PACKAGES)
         return packageInfo?.sharedUserId
+    }
+
+    fun ApplicationInfo.isXposedModule(): Boolean {
+        return metaData?.getBoolean("xposedmodule") == true ||
+                metaData?.containsKey("xposedminversion") == true
+    }
+
+    fun startWatchingAppsCountChange(
+        context: Context,
+        onAppRemoved: (packageName: String) -> Unit
+    ) {
+        val packageFilter = IntentFilter()
+        packageFilter.addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED)
+        packageFilter.addAction(Intent.ACTION_PACKAGE_ADDED)
+        packageFilter.addDataScheme("package")
+        val receiver = object : BroadcastReceiver() {
+            val scope = MainScope()
+            override fun onReceive(cotext: Context, intent: Intent) {
+                val packageName = intent.dataString?.substringAfter("package:") ?: return
+
+                when (intent.action) {
+                    Intent.ACTION_PACKAGE_FULLY_REMOVED -> {
+                        onAppRemoved(packageName)
+                        scope.launch {
+                            val apps = _allApps.value.toMutableList().filter {
+                                it.packageName != packageName
+                            }
+                            _allApps.emit(apps)
+                        }
+                    }
+                    Intent.ACTION_PACKAGE_ADDED -> {
+                        val appInfo = try {
+                            getAppInfo(context, packageName) ?: return
+                        } catch (e: PackageManager.NameNotFoundException) {
+                            e.printStackTrace()
+                            return
+                        }
+                        // switch to ui thread
+                        scope.launch {
+                            val apps = _allApps.value.toMutableList()
+                            apps.add(appInfo)
+                            _allApps.emit(apps)
+                        }
+                    }
+                    else -> {}
+                }
+            }
+        }
+        context.applicationContext.registerReceiver(receiver, packageFilter)
+    }
+
+    @Throws(PackageManager.NameNotFoundException::class)
+    private fun getAppInfo(context: Context, packageName: String): AppInfo? {
+        val packageManager = context.packageManager
+        val packageInfo =
+            getPackageInfo(context, packageName, PackageManager.GET_META_DATA) ?: return null
+        val applicationInfo = packageInfo.applicationInfo
+        val appName = applicationInfo.loadLabel(packageManager).toString()
+        val appIcon = applicationInfo.loadIcon(packageManager)
+        return AppInfo(
+            applicationInfo = applicationInfo,
+            packageName = applicationInfo.packageName,
+            appName = appName,
+            appIcon = appIcon,
+            isSystemApp = isSystemApp(applicationInfo),
+            isXposedModule = packageInfo.applicationInfo.isXposedModule()
+        )
     }
 }

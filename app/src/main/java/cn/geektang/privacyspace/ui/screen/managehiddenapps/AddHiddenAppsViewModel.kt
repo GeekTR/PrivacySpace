@@ -5,12 +5,11 @@ import android.content.pm.PackageManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.BuildConfig
-import cn.geektang.privacyspace.ConfigConstant
 import cn.geektang.privacyspace.bean.AppInfo
+import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.util.AppHelper
 import cn.geektang.privacyspace.util.AppHelper.getPackageInfo
 import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
-import cn.geektang.privacyspace.util.AppHelper.loadAllAppList
 import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.setDifferentValue
@@ -41,15 +40,19 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
                     sharedUserIdMap.putAll(sharedUserIdMapNew)
                 }
             }
-            loadAllAppList(context)
+            launch {
+                loadAllAppList(context)
+            }
         }
     }
 
     private suspend fun loadAllAppList(context: Application) {
-        val appList = context.loadAllAppList()
-            .sortApps(context = context, toTopCollections = hiddenAppListFlow.value)
-        allAppInfoListFlow.value = appList
-        updateAppInfoListFlow()
+        AppHelper.allApps.collect { apps ->
+            val appList =
+                apps.sortApps(context = context, toTopCollections = hiddenAppListFlow.value)
+            allAppInfoListFlow.value = appList
+            updateAppInfoListFlow()
+        }
     }
 
     private fun updateAppInfoListFlow() {

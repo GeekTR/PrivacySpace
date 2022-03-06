@@ -6,9 +6,13 @@ import android.content.pm.PackageManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.bean.AppInfo
+import cn.geektang.privacyspace.bean.ConfigData
 import cn.geektang.privacyspace.util.AppHelper
 import cn.geektang.privacyspace.util.AppHelper.getPackageInfo
+import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
+import cn.geektang.privacyspace.util.AppHelper.isXposedModule
 import cn.geektang.privacyspace.util.ConfigHelper
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -22,6 +26,7 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
     val appListFlow = ConfigHelper.configDataFlow.map {
         it.hiddenAppList.mapToAppInfoList()
     }
+    val configDataFlow: Flow<ConfigData> = ConfigHelper.configDataFlow
 
     private fun Set<String>.mapToAppInfoList(): List<AppInfo> {
         val flag = PackageManager.MATCH_UNINSTALLED_PACKAGES
@@ -59,6 +64,34 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
 
     fun cancelHide(appInfo: AppInfo) {
         removeAppFromHiddenList(appInfo)
+    }
+
+    fun connectTo(sourceApp: AppInfo, targetApp: String) {
+        val configData = ConfigHelper.configDataFlow.value
+        val connectedAppsNew = configData.connectedApps.toMutableMap()
+        val sharedUserIdMapNew = configData.sharedUserIdMap?.toMutableMap() ?: mutableMapOf()
+        val connectedPackages =
+            connectedAppsNew[sourceApp.packageName]?.toMutableSet() ?: mutableSetOf()
+        connectedPackages.add(targetApp)
+        connectedAppsNew[sourceApp.packageName] = connectedPackages
+
+        val sharedUserId = sourceApp.getSharedUserId(context)
+        if (!sharedUserId.isNullOrEmpty()) {
+            sharedUserIdMapNew[sourceApp.packageName] = sharedUserId
+        }
+        ConfigHelper.updateConnectedApps(connectedAppsNew, sharedUserIdMapNew)
+    }
+
+    fun disconnectTo(sourceApp: AppInfo, targetApp: String) {
+        val configData = ConfigHelper.configDataFlow.value
+        val connectedAppsNew = configData.connectedApps.toMutableMap()
+        val sharedUserIdMapNew = configData.sharedUserIdMap?.toMutableMap() ?: mutableMapOf()
+        val connectedPackages =
+            connectedAppsNew[sourceApp.packageName]?.toMutableSet() ?: mutableSetOf()
+        connectedPackages.remove(targetApp)
+        connectedAppsNew[sourceApp.packageName] = connectedPackages
+
+        ConfigHelper.updateConnectedApps(connectedAppsNew, sharedUserIdMapNew)
     }
 
     private fun removeAppFromHiddenList(appInfo: AppInfo) {

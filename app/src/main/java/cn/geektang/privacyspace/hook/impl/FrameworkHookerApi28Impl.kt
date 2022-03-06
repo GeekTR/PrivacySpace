@@ -2,12 +2,11 @@ package cn.geektang.privacyspace.hook.impl
 
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
-import android.os.Binder
 import android.os.UserHandle
 import cn.geektang.privacyspace.hook.Hooker
 import cn.geektang.privacyspace.util.ConfigHelper.getPackageName
 import cn.geektang.privacyspace.util.HookUtil
-import cn.geektang.privacyspace.util.tryLoadClass
+import cn.geektang.privacyspace.util.XLog
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import java.lang.reflect.Field
@@ -15,8 +14,6 @@ import java.lang.reflect.Method
 
 object FrameworkHookerApi28Impl : XC_MethodHook(), Hooker {
     private lateinit var pmsClass: Class<*>
-    private lateinit var packageSettingClass: Class<*>
-    private lateinit var getPackageNameForUidMethod: Method
     private lateinit var settingsClass: Class<*>
     private lateinit var mSettingsField: Field
     private lateinit var getAppIdMethod: Method
@@ -25,25 +22,17 @@ object FrameworkHookerApi28Impl : XC_MethodHook(), Hooker {
     override fun start(classLoader: ClassLoader) {
         try {
             pmsClass = HookUtil.loadPms(classLoader) ?: throw PackageManager.NameNotFoundException()
-            packageSettingClass =
-                classLoader.tryLoadClass("com.android.server.pm.PackageSetting")
-            settingsClass = classLoader.tryLoadClass("com.android.server.pm.Settings")
             mSettingsField = pmsClass.getDeclaredField("mSettings")
             mSettingsField.isAccessible = true
-            getPackageNameForUidMethod = pmsClass.getDeclaredMethod(
-                "getNameForUid",
-                Int::class.javaPrimitiveType
-            )
+
             getAppIdMethod =
                 UserHandle::class.java.getDeclaredMethod("getAppId", Int::class.javaPrimitiveType)
             getSettingLPrMethod =
                 settingsClass.getDeclaredMethod("getSettingLPr", Int::class.javaPrimitiveType)
-            getPackageNameForUidMethod.isAccessible = true
             getAppIdMethod.isAccessible = true
             getSettingLPrMethod.isAccessible = true
         } catch (e: Throwable) {
-            XposedBridge.log("pmsClass加载失败")
-            XposedBridge.log(e)
+            XLog.e(e, "pms load failed.")
             return
         }
         pmsClass.declaredMethods.forEach { method ->
@@ -76,7 +65,8 @@ object FrameworkHookerApi28Impl : XC_MethodHook(), Hooker {
 
     private fun hookApplyPostResolutionFilter(param: MethodHookParam) {
         val resultList = param.result as? MutableList<*> ?: return
-        val callingPackageName = getPackageName(param.thisObject, Binder.getCallingUid()) ?: return
+        val callingUid = param.args[3] as? Int ?: return
+        val callingPackageName = getPackageName(param.thisObject, callingUid) ?: return
         val waitRemoveList = mutableListOf<ResolveInfo>()
         for (resolveInfo in resultList) {
             val targetPackageName = (resolveInfo as? ResolveInfo)?.getPackageName() ?: continue

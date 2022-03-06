@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
+import androidx.compose.material.primarySurface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -16,11 +17,12 @@ fun Chip(text: String) {
     Text(
         modifier = Modifier
             .background(
-                color = Color(0xffebebeb),
+                color = MaterialTheme.colors.secondary,
                 shape = RoundedCornerShape(50)
             )
             .padding(horizontal = 10.dp, vertical = 5.dp),
         text = text,
+        color = Color.White,
         style = MaterialTheme.typography.caption
     )
 }

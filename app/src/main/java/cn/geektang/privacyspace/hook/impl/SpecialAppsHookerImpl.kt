@@ -1,22 +1,21 @@
 package cn.geektang.privacyspace.hook.impl
 
-import android.app.ActivityManager
 import android.content.pm.*
 import android.os.Build
 import cn.geektang.privacyspace.hook.HookMain
 import cn.geektang.privacyspace.hook.Hooker
 import cn.geektang.privacyspace.util.ConfigHelper.getPackageName
+import cn.geektang.privacyspace.util.XLog
 import cn.geektang.privacyspace.util.tryLoadClass
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
-import de.robv.android.xposed.XposedHelpers
 
 object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
     override fun start(classLoader: ClassLoader) {
         val packageManagerClass = try {
             classLoader.tryLoadClass("android.app.ApplicationPackageManager")
         } catch (e: ClassNotFoundException) {
-            XposedBridge.log(e)
+            XLog.e(e, "SpecialAppsHookerImpl start failed.")
             return
         }
 

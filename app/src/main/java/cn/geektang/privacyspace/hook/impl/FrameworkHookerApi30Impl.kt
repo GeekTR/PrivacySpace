@@ -1,9 +1,9 @@
 package cn.geektang.privacyspace.hook.impl
 
 import cn.geektang.privacyspace.hook.Hooker
+import cn.geektang.privacyspace.util.XLog
 import cn.geektang.privacyspace.util.tryLoadClass
 import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 
 object FrameworkHookerApi30Impl : XC_MethodHook(), Hooker {
@@ -17,7 +17,7 @@ object FrameworkHookerApi30Impl : XC_MethodHook(), Hooker {
             packageSettingClass =
                 classLoader.tryLoadClass("com.android.server.pm.PackageSetting")
         } catch (e: ClassNotFoundException) {
-            XposedBridge.log(e)
+            XLog.e(e, "FrameworkHookerApi30Impl start failed.")
             return
         }
 

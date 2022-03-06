@@ -4,10 +4,9 @@ import android.app.ActivityThread
 import android.os.Binder
 import android.os.SystemProperties
 import cn.geektang.privacyspace.BuildConfig
-import cn.geektang.privacyspace.ConfigConstant
+import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.hook.HookMain
 import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import java.io.File
 
@@ -28,7 +27,7 @@ class ConfigServer : XC_MethodHook() {
     fun start(classLoader: ClassLoader) {
         pmsClass = HookUtil.loadPms(classLoader)
         if (pmsClass == null) {
-            XposedBridge.log("PackageManagerService not found, config server start failed.")
+            XLog.e("ConfigServer start failed.")
             return
         }
 
@@ -50,7 +49,7 @@ class ConfigServer : XC_MethodHook() {
     }
 
     private fun hookGetInstallerPackageName(param: MethodHookParam) {
-        if (Binder.getCallingUid() != getClientUid() && !BuildConfig.DEBUG) {
+        if (Binder.getCallingUid() != getClientUid()) {
             return
         }
         val firstArg = param.args.first()?.toString() ?: return
@@ -98,14 +97,18 @@ class ConfigServer : XC_MethodHook() {
                 configFile.writeText(configJson)
             }
         } catch (e: Exception) {
-            XposedBridge.log("Update config error.")
-            XposedBridge.log(e)
+            XLog.e(e, "Update config error.")
         }
     }
 
     private fun getClientUid(): Int {
-        return ActivityThread.getPackageManager()
-            .getPackageUid(BuildConfig.APPLICATION_ID, 0, 0)
+        return try {
+            ActivityThread.getPackageManager()
+                .getPackageUid(BuildConfig.APPLICATION_ID, 0, 0)
+        } catch (e: Throwable) {
+            XLog.d("ConfigServer (${Binder.getCallingUid()}).getClientUid failed.")
+            -1
+        }
     }
 
     private fun tryMigrateOldConfig() {
