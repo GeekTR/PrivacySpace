@@ -7,6 +7,7 @@ import cn.geektang.privacyspace.hook.Hooker
 import cn.geektang.privacyspace.util.ConfigHelper.getPackageName
 import cn.geektang.privacyspace.util.HookUtil
 import cn.geektang.privacyspace.util.XLog
+import cn.geektang.privacyspace.util.tryLoadClass
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import java.lang.reflect.Field
@@ -25,6 +26,7 @@ object FrameworkHookerApi28Impl : XC_MethodHook(), Hooker {
             mSettingsField = pmsClass.getDeclaredField("mSettings")
             mSettingsField.isAccessible = true
 
+            settingsClass = classLoader.tryLoadClass("com.android.server.pm.Settings")
             getAppIdMethod =
                 UserHandle::class.java.getDeclaredMethod("getAppId", Int::class.javaPrimitiveType)
             getSettingLPrMethod =
