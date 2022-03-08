@@ -2,7 +2,7 @@ package cn.geektang.privacyspace.hook
 
 import android.os.Build
 import android.os.FileObserver
-import cn.geektang.privacyspace.ConfigConstant
+import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.bean.ConfigData
 import cn.geektang.privacyspace.hook.impl.FrameworkHookerApi26Impl
 import cn.geektang.privacyspace.hook.impl.FrameworkHookerApi28Impl

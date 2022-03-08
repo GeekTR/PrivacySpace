@@ -5,10 +5,10 @@ import android.content.pm.PackageManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import cn.geektang.privacyspace.ConfigConstant
 import cn.geektang.privacyspace.bean.AppInfo
+import cn.geektang.privacyspace.constant.ConfigConstant
+import cn.geektang.privacyspace.util.AppHelper
 import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
-import cn.geektang.privacyspace.util.AppHelper.loadAllAppList
 import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.setDifferentValue
@@ -60,14 +60,17 @@ class SetConnectedAppsViewModel(
                 }
             }
 
-            val defaultWhitelist = ConfigConstant.defaultWhitelist
-            allAppListFlow.value =
-                context.loadAllAppList()
-                    .filter {
-                        !defaultWhitelist.contains(it.packageName) && targetPackageName != it.packageName
-                    }
-                    .sortApps(context = context, toTopCollections = whitelistFlow.value)
-            updateAppInfoListFlow()
+            launch {
+                val defaultWhitelist = ConfigConstant.defaultWhitelist
+                AppHelper.allApps.collect { apps ->
+                    allAppListFlow.value =
+                        apps.filter {
+                            !defaultWhitelist.contains(it.packageName) && targetPackageName != it.packageName
+                        }
+                            .sortApps(context = context, toTopCollections = whitelistFlow.value)
+                    updateAppInfoListFlow()
+                }
+            }
         }
     }
 

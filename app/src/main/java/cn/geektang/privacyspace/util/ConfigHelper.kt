@@ -1,13 +1,10 @@
 package cn.geektang.privacyspace.util
 
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.ResolveInfo
-import cn.geektang.privacyspace.ConfigConstant
 import cn.geektang.privacyspace.bean.ConfigData
 import cn.geektang.privacyspace.bean.SystemUserInfo
+import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.util.AppHelper.getApkInstallerPackageName
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
@@ -33,7 +30,9 @@ object ConfigHelper {
     fun initConfig(context: Context) {
         if (!::configClient.isInitialized) {
             configClient = ConfigClient(context.applicationContext)
-            startWatchingAppUninstall(context)
+            AppHelper.startWatchingAppsCountChange(context, onAppRemoved = {packageName ->
+                removeConfigForApp(packageName)
+            })
         }
         val serverVersion = configClient.serverVersion()
         isServerStart = serverVersion > 0
@@ -63,24 +62,6 @@ object ConfigHelper {
             configDataFlow.value = configData
             loadingStatusFlow.value = LOADING_STATUS_SUCCESSFUL
         }
-    }
-
-    private fun startWatchingAppUninstall(context: Context) {
-        val packageFilter = IntentFilter()
-        packageFilter.addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED)
-        packageFilter.addDataScheme("package")
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(cotext: Context, intent: Intent) {
-                when (intent.action) {
-                    Intent.ACTION_PACKAGE_FULLY_REMOVED -> {
-                        val packageName = intent.dataString?.substringAfter("package:")
-                        removeConfigForApp(packageName ?: return)
-                    }
-                    else -> {}
-                }
-            }
-        }
-        context.applicationContext.registerReceiver(receiver, packageFilter)
     }
 
     private fun removeConfigForApp(packageName: String) {
