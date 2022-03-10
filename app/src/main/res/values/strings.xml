@@ -37,4 +37,7 @@
     <string name="tips_get_apps_failed">Failed to get Apps, please grant permission.</string>
     <string name="connect_with_desktop">Connect with desktop</string>
     <string name="disconnect_with_desktop">Disconnect with desktop</string>
+    <string name="checked_means_needs_to_be_hidden">If checked, it means that it needs to be hidden</string>
+    <string name="multi_users_settings">Set for multi-user</string>
+    <string name="configuration_takes_effect_after_restarting_the_phone_system">This configuration takes effect after restarting the phone system</string>
 </resources>

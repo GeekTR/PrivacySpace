@@ -35,11 +35,13 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.R
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.bean.ConfigData
+import cn.geektang.privacyspace.bean.SystemUserInfo
 import cn.geektang.privacyspace.constant.RouteConstant
 import cn.geektang.privacyspace.constant.UiSettings
 import cn.geektang.privacyspace.constant.UiSettings.obtainCellContentPaddingRatio
@@ -50,18 +52,27 @@ import cn.geektang.privacyspace.ui.widget.TopBar
 import cn.geektang.privacyspace.util.*
 import cn.geektang.privacyspace.util.AppHelper.getLauncherPackageName
 import coil.compose.rememberImagePainter
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
-
 
 @Composable
 fun LauncherScreen(
     viewModel: LauncherViewModel = viewModel()
 ) {
-    val appList by viewModel.appListFlow.collectAsState(initial = emptyList())
-    val configData by viewModel.configDataFlow.collectAsState(initial = ConfigData.EMPTY)
+    val appList = viewModel.hiddenAppList
+    val systemUsers = viewModel.systemUsers
+    val dualAppsSettingsMap = viewModel.dualAppsSettingsMap
+    val configData by viewModel.configData
     val loadStatus by ConfigHelper.loadingStatusFlow.collectAsState()
     val context = LocalContext.current
+    val isShowDualAppsSettingsDialog = remember {
+        mutableStateOf(false)
+    }
+    val focusAppInfo = remember {
+        mutableStateOf<AppInfo?>(null)
+    }
+
     val actions = object : LauncherActions {
         override fun uninstall(appInfo: AppInfo) {
             val uri = Uri.fromParts("package", appInfo.packageName, null)
@@ -80,6 +91,15 @@ fun LauncherScreen(
         override fun disconnectTo(sourceApp: AppInfo, targetApp: String) {
             viewModel.disconnectTo(sourceApp, targetApp)
         }
+
+        override fun onDualAppsSettingsItemClick(appInfo: AppInfo) {
+            focusAppInfo.value = appInfo
+            isShowDualAppsSettingsDialog.value = true
+        }
+
+        override fun changeDualAppsSettingsMap(appInfo: AppInfo, checkedUsers: Set<Int>?) {
+            viewModel.changeDualAppsSettingsMap(appInfo, checkedUsers)
+        }
     }
 
     val cellCountValue = context.obtainCellCount()
@@ -92,75 +112,107 @@ fun LauncherScreen(
     }
     LauncherScreenContent(
         appList = appList,
+        systemUsers = systemUsers,
         configData = configData,
         cellCount = cellCount.value,
         cellContentPaddingRatio = cellContentPaddingRatio.value,
         loadStatus = loadStatus,
         showAdjustLayoutDialog = showAdjustLayoutDialog,
-        actions = actions
+        actions = actions,
+        syncConfig = viewModel::syncConfig
     )
     if (showAdjustLayoutDialog.value) {
         AdjustLayoutDialog(showAdjustLayoutDialog, cellCount, cellContentPaddingRatio)
     }
 
-    var isShowAlterDialog by remember {
-        mutableStateOf(!context.sp.hasReadNotice)
-    }
-    if (isShowAlterDialog) {
-        AlertDialog(onDismissRequest = { isShowAlterDialog = false },
-            properties = DialogProperties(
-                dismissOnBackPress = false,
-                dismissOnClickOutside = false
-            ),
-            buttons = {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 15.dp),
-                    horizontalArrangement = Arrangement.End
-                ) {
-                    TextButton(onClick = {
-                        exitProcess(0)
-                    }) {
-                        Text(
-                            text = stringResource(R.string.launcher_notice_cancel),
-                            color = MaterialTheme.colors.secondary
-                        )
-                    }
-                    TextButton(onClick = {
-                        isShowAlterDialog = false
-                        context.sp.hasReadNotice = true
-                    }) {
-                        Text(
-                            text = stringResource(R.string.launcher_notice_confirm),
-                            color = MaterialTheme.colors.primary
-                        )
-                    }
-                }
-            }, text = {
-                Text(text = stringResource(id = R.string.launcher_notice))
-            }, title = {
-                Text(text = stringResource(R.string.tips))
-            })
+    if (isShowDualAppsSettingsDialog.value) {
+        DualAppsSettingDialog(
+            showState = isShowDualAppsSettingsDialog,
+            appInfo = focusAppInfo.value,
+            systemUsers = systemUsers,
+            dualAppsSettingsMap = dualAppsSettingsMap,
+            actions = actions
+        )
     }
 
+    val isShowAlterDialog = remember {
+        mutableStateOf(!context.sp.hasReadNotice)
+    }
+    if (isShowAlterDialog.value) {
+        NoticeDialog(isShowAlterDialog, context)
+    }
+    val coroutineScope = rememberCoroutineScope()
+    OnLifecycleEvent(onEvent = { event ->
+        if (event == Lifecycle.Event.ON_PAUSE
+            || event == Lifecycle.Event.ON_STOP
+            || event == Lifecycle.Event.ON_DESTROY
+        ) {
+            coroutineScope.launch {
+                viewModel.syncConfig()
+            }
+        }
+    })
+}
+
+@Composable
+private fun NoticeDialog(
+    isShowAlterDialog: MutableState<Boolean>,
+    context: Context
+) {
+    AlertDialog(onDismissRequest = { isShowAlterDialog.value = false },
+        properties = DialogProperties(
+            dismissOnBackPress = false,
+            dismissOnClickOutside = false
+        ),
+        buttons = {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 15.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = {
+                    exitProcess(0)
+                }) {
+                    Text(
+                        text = stringResource(R.string.launcher_notice_cancel),
+                        color = MaterialTheme.colors.secondary
+                    )
+                }
+                TextButton(onClick = {
+                    isShowAlterDialog.value = false
+                    context.sp.hasReadNotice = true
+                }) {
+                    Text(
+                        text = stringResource(R.string.launcher_notice_confirm),
+                        color = MaterialTheme.colors.primary
+                    )
+                }
+            }
+        }, text = {
+            Text(text = stringResource(id = R.string.launcher_notice))
+        }, title = {
+            Text(text = stringResource(R.string.tips))
+        })
 }
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationApi::class)
 @Composable
 private fun LauncherScreenContent(
     appList: List<AppInfo>,
+    systemUsers: List<SystemUserInfo>,
     configData: ConfigData,
     cellCount: Int,
     cellContentPaddingRatio: Float,
     loadStatus: Int,
     showAdjustLayoutDialog: MutableState<Boolean>,
-    actions: LauncherActions
+    actions: LauncherActions,
+    syncConfig: suspend () -> Unit,
 ) {
     val isPopupMenuShow = remember {
         mutableStateOf(false)
     }
-    LauncherPopupMenu(isPopupMenuShow, showAdjustLayoutDialog, loadStatus)
+    LauncherPopupMenu(isPopupMenuShow, showAdjustLayoutDialog, syncConfig, loadStatus)
     var popupMenuOffset: Offset? by remember {
         mutableStateOf(null)
     }
@@ -196,9 +248,21 @@ private fun LauncherScreenContent(
             actions.disconnectTo(sourceApp, targetApp)
             isShowPopupMenu.value = false
         }
+
+        override fun onDualAppsSettingsItemClick(appInfo: AppInfo) {
+            actions.onDualAppsSettingsItemClick(appInfo)
+            isShowPopupMenu.value = false
+        }
     }
 
-    AppItemPopupMenu(configData, popupMenuAppInfo, popupMenuOffset, isShowPopupMenu, actionsWrapper)
+    AppItemPopupMenu(
+        configData = configData,
+        systemUsers = systemUsers,
+        popupMenuAppInfo = popupMenuAppInfo,
+        popupMenuOffset = popupMenuOffset,
+        isShowPopupMenu = isShowPopupMenu,
+        actions = actionsWrapper
+    )
 
     Column {
         TopBar(
@@ -248,6 +312,7 @@ private fun LauncherScreenContent(
 @Composable
 private fun AppItemPopupMenu(
     configData: ConfigData,
+    systemUsers: List<SystemUserInfo>,
     popupMenuAppInfo: AppInfo?,
     popupMenuOffset: Offset?,
     isShowPopupMenu: MutableState<Boolean>,
@@ -287,7 +352,10 @@ private fun AppItemPopupMenu(
                         actions.cancelHide(popupMenuAppInfo ?: return@PopupItem)
                     })
                     if (isShowDesktopMenu) {
-                        val text = if (isHideToDesktop) stringResource(R.string.disconnect_with_desktop) else stringResource(R.string.connect_with_desktop)
+                        val text =
+                            if (isHideToDesktop) stringResource(R.string.disconnect_with_desktop) else stringResource(
+                                R.string.connect_with_desktop
+                            )
                         PopupItem(text = text, onClick = {
                             if (isHideToDesktop) {
                                 actions.disconnectTo(popupMenuAppInfo!!, launcherPackageName)
@@ -299,6 +367,11 @@ private fun AppItemPopupMenu(
                     PopupItem(text = stringResource(id = R.string.set_connected_apps), onClick = {
                         navController.navigate("${RouteConstant.SET_CONNECTED_APPS}?targetPackageName=${popupMenuAppInfo?.packageName ?: ""}")
                     })
+                    if (systemUsers.isNotEmpty()) {
+                        PopupItem(text = stringResource(R.string.multi_users_settings), onClick = {
+                            actions.onDualAppsSettingsItemClick(popupMenuAppInfo!!)
+                        })
+                    }
                 }
             }
         }
@@ -313,17 +386,18 @@ private fun LauncherPopupMenuPreview() {
     }
     PopupMenuContent(isShow, remember {
         mutableStateOf(false)
-    }, ConfigHelper.LOADING_STATUS_SUCCESSFUL)
+    }, {}, ConfigHelper.LOADING_STATUS_SUCCESSFUL)
 }
 
 @Composable
 private fun LauncherPopupMenu(
     isPopupMenuShow: MutableState<Boolean>,
     showAdjustLayoutDialog: MutableState<Boolean>,
+    syncConfig: suspend () -> Unit,
     loadStatus: Int
 ) {
     PopupMenu(isShow = isPopupMenuShow) {
-        PopupMenuContent(isPopupMenuShow, showAdjustLayoutDialog, loadStatus)
+        PopupMenuContent(isPopupMenuShow, showAdjustLayoutDialog, syncConfig, loadStatus)
     }
 }
 
@@ -331,6 +405,7 @@ private fun LauncherPopupMenu(
 private fun PopupMenuContent(
     isPopupMenuShow: MutableState<Boolean>,
     showAdjustLayoutDialog: MutableState<Boolean>,
+    syncConfig: suspend () -> Unit,
     loadStatus: Int
 ) {
     val navController = LocalNavHostController.current
@@ -360,6 +435,7 @@ private fun PopupMenuContent(
         PopupItem(text = stringResource(R.string.reboot_desktop)) {
             isPopupMenuShow.value = false
             scope.launch {
+                syncConfig()
                 val isSucceed =
                     Su.exec("am force-stop ${context.getLauncherPackageName() ?: "com.miui.home"}")
                 if (isSucceed) {
@@ -401,7 +477,6 @@ private fun PopupMenuContent(
             } catch (e: Throwable) {
                 context.showToast(context.getString(R.string.coolapk_not_found))
             }
-
         })
         PopupItem(text = stringResource(R.string.view_update_info_github), onClick = {
             isPopupMenuShow.value = false
@@ -529,6 +604,7 @@ fun LauncherScreenPreview() {
     )
     LauncherScreenContent(
         appList = listOf(appInfo, appInfo, appInfo, appInfo, appInfo, appInfo),
+        systemUsers = emptyList(),
         configData = ConfigData.EMPTY,
         cellCount = 4,
         cellContentPaddingRatio = 0.5f,
@@ -537,6 +613,8 @@ fun LauncherScreenPreview() {
             mutableStateOf(false)
         },
         actions = object : LauncherActions {
+
+        }, syncConfig = {
 
         })
 }
@@ -561,6 +639,12 @@ interface LauncherActions {
 
     fun disconnectTo(sourceApp: AppInfo, targetApp: String) {
 
+    }
+
+    fun onDualAppsSettingsItemClick(appInfo: AppInfo) {
+    }
+
+    fun changeDualAppsSettingsMap(appInfo: AppInfo, checkedUsers: Set<Int>?) {
     }
 }
 
@@ -640,4 +724,97 @@ private fun RadioButton(cellCount: Int, isChecked: Boolean, onClick: () -> Unit)
         color = textColor,
         text = text
     )
+}
+
+@Composable
+private fun DualAppsSettingDialog(
+    showState: MutableState<Boolean>,
+    appInfo: AppInfo?,
+    systemUsers: List<SystemUserInfo>,
+    dualAppsSettingsMap: Map<String, Set<Int>>,
+    actions: LauncherActions
+) {
+    val targetSetting = dualAppsSettingsMap[appInfo?.packageName ?: ""]
+    val usersCheckedStatus = remember(appInfo) {
+        mutableStateOf(usersWithCheckedStatus(systemUsers, targetSetting))
+    }
+    Dialog(onDismissRequest = {
+        showState.value = false
+        val users = usersCheckedStatus.value
+        when {
+            users.isAllUnchecked() -> {
+                actions.cancelHide(appInfo!!)
+            }
+            users.isAllChecked() -> {
+                actions.changeDualAppsSettingsMap(appInfo!!, null)
+            }
+            else -> {
+                actions.changeDualAppsSettingsMap(appInfo!!, users.toCheckedStatusSet())
+            }
+        }
+    }) {
+        DualAppsSettingDialogContent(usersCheckedStatus)
+    }
+}
+
+private fun List<Pair<SystemUserInfo, Boolean>>.toCheckedStatusSet(): Set<Int> {
+    val checkedStatusSet = mutableSetOf<Int>()
+    for (pair in this) {
+        if (pair.second) {
+            checkedStatusSet.add(pair.first.id)
+        }
+    }
+    return checkedStatusSet
+}
+
+private fun List<Pair<SystemUserInfo, Boolean>>.isAllChecked(): Boolean {
+    var isAllChecked = true
+    for (pair in this) {
+        if (!pair.second) {
+            isAllChecked = false
+        }
+    }
+    return isAllChecked
+}
+
+private fun List<Pair<SystemUserInfo, Boolean>>.isAllUnchecked(): Boolean {
+    var isAllUnchecked = true
+    for (pair in this) {
+        if (pair.second) {
+            isAllUnchecked = false
+        }
+    }
+    return isAllUnchecked
+}
+
+private fun usersWithCheckedStatus(
+    systemUsers: List<SystemUserInfo>,
+    targetSetting: Set<Int>?
+) = systemUsers.map { it to (null == targetSetting || targetSetting.contains(it.id)) }
+
+@Composable
+private fun DualAppsSettingDialogContent(users: MutableState<List<Pair<SystemUserInfo, Boolean>>>) {
+    Surface(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
+        Column(modifier = Modifier.padding(horizontal = 15.dp, vertical = 20.dp)) {
+            Text(
+                modifier = Modifier.padding(bottom = 10.dp),
+                text = stringResource(R.string.checked_means_needs_to_be_hidden),
+                style = MaterialTheme.typography.subtitle1
+            )
+            val usersValue = users.value
+            usersValue.forEach { userWithCheckedStatus ->
+                val user = userWithCheckedStatus.first
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = userWithCheckedStatus.second, onCheckedChange = {
+                        val newValue = usersValue.toMutableList()
+                        val index = usersValue.indexOf(userWithCheckedStatus)
+                        newValue.removeAt(index)
+                        newValue.add(index, user to !userWithCheckedStatus.second)
+                        users.value = newValue
+                    })
+                    Text(text = user.name)
+                }
+            }
+        }
+    }
 }

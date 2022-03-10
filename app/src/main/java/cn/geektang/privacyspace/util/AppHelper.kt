@@ -163,8 +163,12 @@ object AppHelper {
     }
 
     fun AppInfo.getSharedUserId(context: Context): String? {
+        return packageName.getSharedUserId(context)
+    }
+
+    fun String.getSharedUserId(context: Context): String? {
         val packageInfo =
-            getPackageInfo(context, packageName, PackageManager.MATCH_UNINSTALLED_PACKAGES)
+            getPackageInfo(context, this, PackageManager.MATCH_UNINSTALLED_PACKAGES)
         return packageInfo?.sharedUserId
     }
 

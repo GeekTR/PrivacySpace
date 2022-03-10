@@ -3,30 +3,56 @@ package cn.geektang.privacyspace.ui.screen.launcher
 import android.app.Application
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cn.geektang.privacyspace.R
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.bean.ConfigData
+import cn.geektang.privacyspace.bean.SystemUserInfo
 import cn.geektang.privacyspace.util.AppHelper
 import cn.geektang.privacyspace.util.AppHelper.getPackageInfo
 import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
 import cn.geektang.privacyspace.util.AppHelper.isXposedModule
 import cn.geektang.privacyspace.util.ConfigHelper
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import cn.geektang.privacyspace.util.showToast
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class LauncherViewModel(private val context: Application) : AndroidViewModel(context) {
+    val hiddenAppList = mutableStateListOf<AppInfo>()
+    val configData = mutableStateOf(ConfigData.EMPTY)
+    val systemUsers = mutableStateListOf<SystemUserInfo>()
+    val dualAppsSettingsMap = mutableStateMapOf<String, Set<Int>>()
+    private val sharedUserIdMap = mutableMapOf<String, String>()
+    private val connectedApps = mutableMapOf<String, Set<String>>()
+    private var needSync = false
+
     init {
+        ConfigHelper.initConfig(context)
         viewModelScope.launch {
-            ConfigHelper.initConfig(context)
+            systemUsers.clear()
+            systemUsers.addAll(ConfigHelper.queryAllUsers() ?: emptyList())
+        }
+        viewModelScope.launch {
+            ConfigHelper.configDataFlow.collect {
+                configData.value = it
+                hiddenAppList.clear()
+                hiddenAppList.addAll(it.hiddenAppList.mapToAppInfoList())
+
+                sharedUserIdMap.clear()
+                sharedUserIdMap.putAll(it.sharedUserIdMap ?: emptyMap())
+
+                connectedApps.clear()
+                connectedApps.putAll(it.connectedApps)
+
+                dualAppsSettingsMap.clear()
+                dualAppsSettingsMap.putAll(it.dualAppsSettingsMap ?: emptyMap())
+            }
         }
     }
-
-    val appListFlow = ConfigHelper.configDataFlow.map {
-        it.hiddenAppList.mapToAppInfoList()
-    }
-    val configDataFlow: Flow<ConfigData> = ConfigHelper.configDataFlow
 
     private fun Set<String>.mapToAppInfoList(): List<AppInfo> {
         val flag = PackageManager.MATCH_UNINSTALLED_PACKAGES
@@ -63,47 +89,67 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
     }
 
     fun cancelHide(appInfo: AppInfo) {
-        removeAppFromHiddenList(appInfo)
+        val hasChange = this.hiddenAppList.removeIf { it.packageName == appInfo.packageName }
+        needSync = needSync or hasChange
     }
 
     fun connectTo(sourceApp: AppInfo, targetApp: String) {
-        val configData = ConfigHelper.configDataFlow.value
-        val connectedAppsNew = configData.connectedApps.toMutableMap()
-        val sharedUserIdMapNew = configData.sharedUserIdMap?.toMutableMap() ?: mutableMapOf()
-        val connectedPackages =
-            connectedAppsNew[sourceApp.packageName]?.toMutableSet() ?: mutableSetOf()
-        connectedPackages.add(targetApp)
-        connectedAppsNew[sourceApp.packageName] = connectedPackages
+        val connectedAppsForSourceApp =
+            connectedApps[sourceApp.packageName]?.toMutableSet() ?: mutableSetOf()
+        connectedAppsForSourceApp.add(targetApp)
+        connectedApps[sourceApp.packageName] = connectedAppsForSourceApp
 
-        val sharedUserId = sourceApp.getSharedUserId(context)
-        if (!sharedUserId.isNullOrEmpty()) {
-            sharedUserIdMapNew[sourceApp.packageName] = sharedUserId
+        val sharedUserIdForSourceApp = sourceApp.getSharedUserId(context)
+        if (!sharedUserIdForSourceApp.isNullOrEmpty()) {
+            sharedUserIdMap[sourceApp.packageName] = sharedUserIdForSourceApp
         }
-        ConfigHelper.updateConnectedApps(connectedAppsNew, sharedUserIdMapNew)
+
+        val sharedUserIdForTargetApp = sourceApp.getSharedUserId(context)
+        if (!sharedUserIdForTargetApp.isNullOrEmpty()) {
+            sharedUserIdMap[targetApp] = sharedUserIdForTargetApp
+        }
+
+        needSync = true
     }
 
     fun disconnectTo(sourceApp: AppInfo, targetApp: String) {
-        val configData = ConfigHelper.configDataFlow.value
-        val connectedAppsNew = configData.connectedApps.toMutableMap()
-        val sharedUserIdMapNew = configData.sharedUserIdMap?.toMutableMap() ?: mutableMapOf()
-        val connectedPackages =
-            connectedAppsNew[sourceApp.packageName]?.toMutableSet() ?: mutableSetOf()
-        connectedPackages.remove(targetApp)
-        connectedAppsNew[sourceApp.packageName] = connectedPackages
-
-        ConfigHelper.updateConnectedApps(connectedAppsNew, sharedUserIdMapNew)
+        val connectedAppsForSourceApp =
+            connectedApps[sourceApp.packageName]?.toMutableSet() ?: mutableSetOf()
+        val hasChange = connectedAppsForSourceApp.remove(targetApp)
+        connectedApps[sourceApp.packageName] = connectedAppsForSourceApp
+        needSync = needSync or hasChange
     }
 
-    private fun removeAppFromHiddenList(appInfo: AppInfo) {
-        val configData = ConfigHelper.configDataFlow.value
-        val hiddenAppListNew = configData.hiddenAppList.toMutableSet()
-        if (hiddenAppListNew.remove(appInfo.packageName)) {
-            val connectedAppsNew = configData.connectedApps.toMutableMap()
-            connectedAppsNew.remove(appInfo.packageName)
-            ConfigHelper.updateHiddenListAndConnectedApps(
-                hiddenAppListNew = hiddenAppListNew,
-                connectedAppsNew = connectedAppsNew
+    suspend fun syncConfig() {
+        if (needSync) {
+            needSync = false
+            syncConfigInner()
+        }
+    }
+
+    private suspend fun syncConfigInner() {
+        ConfigHelper.updateConfig(
+            configData.value.copy(
+                hiddenAppList = hiddenAppList.map { it.packageName }.toSet(),
+                sharedUserIdMap = sharedUserIdMap.toMap(),
+                connectedApps = connectedApps.toMap(),
+                dualAppsSettingsMap = dualAppsSettingsMap.toMap()
             )
+        )
+    }
+
+    fun changeDualAppsSettingsMap(appInfo: AppInfo, checkedUsers: Set<Int>?) {
+        if (dualAppsSettingsMap[appInfo.packageName] != checkedUsers) {
+            if (null == checkedUsers) {
+                dualAppsSettingsMap.remove(appInfo.packageName)
+            } else {
+                dualAppsSettingsMap[appInfo.packageName] = checkedUsers
+            }
+            needSync = true
+
+            if (ConfigHelper.getServerVersion() < 17) {
+                context.showToast(R.string.configuration_takes_effect_after_restarting_the_phone_system)
+            }
         }
     }
 }

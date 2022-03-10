@@ -11,7 +11,8 @@ data class ConfigData(
     val hiddenAppList: Set<String>,
     val whitelist: Set<String>,
     val connectedApps: Map<String, Set<String>>,
-    val sharedUserIdMap: Map<String, String>?
+    val sharedUserIdMap: Map<String, String>?,
+    val dualAppsSettingsMap: Map<String, Set<Int>>?
 ) {
     companion object {
         val EMPTY = ConfigData(
@@ -19,7 +20,8 @@ data class ConfigData(
             hiddenAppList = emptySet(),
             whitelist = emptySet(),
             connectedApps = emptyMap(),
-            sharedUserIdMap = emptyMap()
+            sharedUserIdMap = emptyMap(),
+            dualAppsSettingsMap = emptyMap()
         )
     }
 }

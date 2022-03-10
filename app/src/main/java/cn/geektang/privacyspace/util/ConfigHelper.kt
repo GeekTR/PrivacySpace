@@ -30,7 +30,7 @@ object ConfigHelper {
     fun initConfig(context: Context) {
         if (!::configClient.isInitialized) {
             configClient = ConfigClient(context.applicationContext)
-            AppHelper.startWatchingAppsCountChange(context, onAppRemoved = {packageName ->
+            AppHelper.startWatchingAppsCountChange(context, onAppRemoved = { packageName ->
                 removeConfigForApp(packageName)
             })
         }
@@ -92,7 +92,18 @@ object ConfigHelper {
         }
     }
 
-    private suspend fun updateConfigFileInner(configData: ConfigData) {
+    suspend fun updateConfig(configData: ConfigData) {
+        withContext(Dispatchers.IO) {
+            configDataFlow.value = configData
+            configClient.updateConfig(configData)
+        }
+    }
+
+    fun getServerVersion(): Int {
+        return configClient.serverVersion()
+    }
+
+    private suspend fun updateConfigInner(configData: ConfigData) {
         withContext(Dispatchers.IO) {
             configClient.updateConfig(configData)
         }
@@ -111,7 +122,7 @@ object ConfigHelper {
         )
         configDataFlow.value = newConfigData
         scope.launch {
-            updateConfigFileInner(newConfigData)
+            updateConfigInner(newConfigData)
         }
     }
 
@@ -122,7 +133,7 @@ object ConfigHelper {
         )
         configDataFlow.value = newConfigData
         scope.launch {
-            updateConfigFileInner(newConfigData)
+            updateConfigInner(newConfigData)
         }
     }
 
@@ -136,7 +147,7 @@ object ConfigHelper {
         )
         configDataFlow.value = newConfigData
         scope.launch {
-            updateConfigFileInner(newConfigData)
+            updateConfigInner(newConfigData)
         }
     }
 
