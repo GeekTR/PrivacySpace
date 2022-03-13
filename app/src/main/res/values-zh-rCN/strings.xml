@@ -37,4 +37,8 @@
     <string name="tips_get_apps_failed">获取App列表失败,请授予获取应用列表权限</string>
     <string name="connect_with_desktop">与桌面关联</string>
     <string name="disconnect_with_desktop">取消关联桌面</string>
+    <string name="checked_means_needs_to_be_hidden">勾选则代表需要对其隐藏</string>
+    <string name="multi_users_settings">多用户配置</string>
+    <string name="configuration_takes_effect_after_restarting_the_phone_system">此配置需要重启手机系统生效</string>
+    <string name="select_all_system_apps">全选系统App</string>
 </resources>

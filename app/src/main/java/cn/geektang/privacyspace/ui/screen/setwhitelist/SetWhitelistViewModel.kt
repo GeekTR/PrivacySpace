@@ -19,7 +19,8 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
     val allAppListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
     val appListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
     val whitelistFlow = MutableStateFlow<Set<String>>(emptySet())
-    val showSystemAppsFlow = MutableStateFlow(false)
+    val showSystemAppsFlow = MutableStateFlow(true)
+    val showSelectAll = MutableStateFlow(false)
     val searchTextFlow = MutableStateFlow("")
     private val sharedUserIdMap = mutableMapOf<String, String>()
     private var isModified = false
@@ -28,9 +29,9 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
         viewModelScope.launch {
             launch {
                 ConfigHelper.configDataFlow.collect {
-                    whitelistFlow.value = ConfigHelper.configDataFlow.value.whitelist
-                    val sharedUserIdMapNew =
-                        ConfigHelper.configDataFlow.value.sharedUserIdMap ?: emptyMap()
+                    whitelistFlow.value = it.whitelist
+
+                    val sharedUserIdMapNew = it.sharedUserIdMap ?: emptyMap()
                     sharedUserIdMap.clear()
                     sharedUserIdMap.putAll(sharedUserIdMapNew)
                 }
@@ -63,6 +64,9 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
         val whitelist = whitelistFlow.value.toMutableSet()
         whitelist.remove(appInfo.packageName)
         whitelistFlow.value = whitelist
+        if (appInfo.isSystemApp) {
+            showSelectAll.value = false
+        }
         isModified = true
     }
 
@@ -104,5 +108,28 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
     fun updateSearchText(searchText: String) {
         searchTextFlow.value = searchText
         updateAppInfoListFlow()
+    }
+
+    fun selectAllSystemApps(selectAll: Boolean) {
+        if (selectAll && !showSystemAppsFlow.value) {
+            setSystemAppsVisible(true)
+        }
+        val whitelistNew = whitelistFlow.value.toMutableSet()
+        if (selectAll) {
+            for (appInfo in appListFlow.value) {
+                if (appInfo.isSystemApp && !whitelistNew.contains(appInfo.packageName)) {
+                    whitelistNew.add(appInfo.packageName)
+                }
+            }
+        } else {
+            for (appInfo in appListFlow.value) {
+                if (appInfo.isSystemApp) {
+                    whitelistNew.remove(appInfo.packageName)
+                }
+            }
+        }
+        whitelistFlow.value = whitelistNew
+        showSelectAll.value = selectAll
+        isModified = true
     }
 }

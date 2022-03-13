@@ -24,6 +24,7 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
     val hiddenAppListFlow = MutableStateFlow<Set<String>>(emptySet())
     val isShowSystemAppsFlow = MutableStateFlow(false)
     val searchTextFlow = MutableStateFlow("")
+    private val multiUserConfig = mutableMapOf<String, Set<Int>>()
     private var isModified = false
     private val connectedAppsCache = mutableMapOf<String, Set<String>>()
     private val sharedUserIdMap = mutableMapOf<String, String>()
@@ -33,11 +34,16 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
             launch {
                 ConfigHelper.configDataFlow.collect {
                     hiddenAppListFlow.value = it.hiddenAppList.toSet()
+
                     connectedAppsCache.clear()
                     connectedAppsCache.putAll(it.connectedApps)
+
                     val sharedUserIdMapNew = it.sharedUserIdMap ?: emptyMap()
                     sharedUserIdMap.clear()
                     sharedUserIdMap.putAll(sharedUserIdMapNew)
+
+                    multiUserConfig.clear()
+                    multiUserConfig.putAll(it.multiUserConfig ?: emptyMap())
                 }
             }
             launch {
@@ -114,6 +120,7 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
         hiddenAppList.remove(appInfo.packageName)
         hiddenAppListFlow.value = hiddenAppList
         connectedAppsCache.remove(appInfo.packageName)
+        multiUserConfig.remove(appInfo.packageName)
         isModified = true
     }
 
@@ -129,6 +136,7 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
             ConfigHelper.updateHiddenListAndConnectedApps(
                 hiddenAppListFlow.value,
                 connectedAppsCache,
+                multiUserConfig = multiUserConfig,
                 sharedUserIdMap
             )
             isModified = false

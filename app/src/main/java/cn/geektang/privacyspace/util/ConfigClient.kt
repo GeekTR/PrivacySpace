@@ -3,6 +3,7 @@ package cn.geektang.privacyspace.util
 import android.content.Context
 import android.util.Log
 import cn.geektang.privacyspace.bean.ConfigData
+import cn.geektang.privacyspace.bean.SystemUserInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -30,7 +31,7 @@ class ConfigClient(context: Context) {
                 return@withContext null
             }
             return@withContext try {
-                JsonHelper.getConfigAdapter().fromJson(configJson)
+                JsonHelper.configAdapter().fromJson(configJson)
             } catch (e: Exception) {
                 e.printStackTrace()
                 Log.d("PrivacySpace", "Config is invalid.")
@@ -41,8 +42,19 @@ class ConfigClient(context: Context) {
 
     suspend fun updateConfig(configData: ConfigData) {
         withContext(Dispatchers.IO) {
-            val configJson = JsonHelper.getConfigAdapter().toJson(configData)
+            val configJson = JsonHelper.configAdapter().toJson(configData)
             connectServer("${ConfigServer.UPDATE_CONFIG}$configJson")
+        }
+    }
+
+    suspend fun querySystemUserList(): List<SystemUserInfo>? {
+        return withContext(Dispatchers.IO) {
+            val userListJson = connectServer(ConfigServer.GET_USERS)
+            try {
+                JsonHelper.systemUserInfoListAdapter().fromJson(userListJson)
+            } catch (e: Exception) {
+                null
+            }
         }
     }
 

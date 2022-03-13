@@ -8,27 +8,37 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.collection.ArrayMap
 import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.R
 import cn.geektang.privacyspace.bean.AppInfo
-import cn.geektang.privacyspace.util.AppHelper.loadAllAppList
+import com.microsoft.appcenter.analytics.Analytics
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlin.jvm.Throws
 
 object AppHelper {
     private val _allApps = MutableStateFlow<List<AppInfo>>(emptyList())
     val allApps: Flow<List<AppInfo>> = _allApps
+    private var getAppsRetryTimes = 0
 
     suspend fun initialize(context: Context) {
         val apps = try {
-            context.loadAllAppList()
+            val result = context.loadAllAppList()
+            getAppsRetryTimes = 0
+            result
         } catch (e: Exception) {
+            val properties = ArrayMap<String, String>()
+            properties["exception"] = e.javaClass.name
+            Analytics.trackEvent("ReadAppsFailed", properties)
+            getAppsRetryTimes++
+
             e.printStackTrace()
-            context.showToast(R.string.tips_get_apps_failed)
-            delay(3000)
-            // retry after 3 seconds
+            if (getAppsRetryTimes == 3) {
+                context.showToast(R.string.tips_get_apps_failed)
+            }
+            delay(1000)
+            // retry after 1 seconds
             initialize(context)
             return
         }
@@ -37,11 +47,9 @@ object AppHelper {
 
     private suspend fun Context.loadAllAppList(): List<AppInfo> {
         return withContext(Dispatchers.IO) {
-            val flag =
-                PackageManager.MATCH_UNINSTALLED_PACKAGES
             val packageManager = packageManager
             return@withContext packageManager
-                .getInstalledApplications(flag)
+                .getInstalledApplications(PackageManager.MATCH_UNINSTALLED_PACKAGES)
                 .mapNotNull { applicationInfo ->
                     val appName = applicationInfo.loadLabel(packageManager).toString()
                     val appIcon = applicationInfo.loadIcon(packageManager)
@@ -155,8 +163,12 @@ object AppHelper {
     }
 
     fun AppInfo.getSharedUserId(context: Context): String? {
+        return packageName.getSharedUserId(context)
+    }
+
+    fun String.getSharedUserId(context: Context): String? {
         val packageInfo =
-            getPackageInfo(context, packageName, PackageManager.MATCH_UNINSTALLED_PACKAGES)
+            getPackageInfo(context, this, PackageManager.MATCH_UNINSTALLED_PACKAGES)
         return packageInfo?.sharedUserId
     }
 

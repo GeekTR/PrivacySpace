@@ -36,11 +36,13 @@ object FrameworkHookerApi30Impl : XC_MethodHook(), Hooker {
         if (param.result == true) {
             return
         }
-        val targetPackageName = param.args.getOrNull(2)?.packageName ?: return
-        val callingPackageName = param.args.getOrNull(1)?.packageName ?: return
+        val targetPackageName = param.args[2]?.packageName ?: return
+        val callingPackageName = param.args[1]?.packageName ?: return
+        val userId = param.args[3] as Int
         val shouldIntercept = HookChecker.shouldIntercept(
             targetPackageName = targetPackageName,
-            callingPackageName = callingPackageName
+            callingPackageName = callingPackageName,
+            userId = userId
         )
         if (shouldIntercept) {
             param.result = true
