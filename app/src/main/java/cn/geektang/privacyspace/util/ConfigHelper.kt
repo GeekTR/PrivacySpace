@@ -2,7 +2,9 @@ package cn.geektang.privacyspace.util
 
 import android.content.Context
 import android.content.pm.ResolveInfo
+import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.bean.ConfigData
+import cn.geektang.privacyspace.bean.SystemUserInfo
 import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.util.AppHelper.getApkInstallerPackageName
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +31,7 @@ object ConfigHelper {
     fun initConfig(context: Context) {
         if (!::configClient.isInitialized) {
             configClient = ConfigClient(context.applicationContext)
-            AppHelper.startWatchingAppsCountChange(context, onAppRemoved = {packageName ->
+            AppHelper.startWatchingAppsCountChange(context, onAppRemoved = { packageName ->
                 removeConfigForApp(packageName)
             })
         }
@@ -47,7 +49,9 @@ object ConfigHelper {
                 configClient.migrateOldConfig()
                 configData = configClient.queryConfig()
             }
-            configData = configData ?: configDataFlow.value
+            configData = (configData ?: configDataFlow.value).copy(
+                enableDetailLog = BuildConfig.DEBUG
+            )
             if (!installerPackageName.isNullOrEmpty()
                 && !configData.whitelist.contains(installerPackageName)
             ) {
@@ -72,10 +76,17 @@ object ConfigHelper {
             }
             val hiddenAppListNew = configData.hiddenAppList.toMutableSet()
             val connectedAppsNew = configData.connectedApps.toMutableMap()
+            val multiUserConfig =
+                configData.multiUserConfig?.toMutableMap() ?: mutableMapOf()
             if (hiddenAppListNew.contains(packageName)) {
                 hiddenAppListNew.remove(packageName)
                 connectedAppsNew.remove(packageName)
-                updateHiddenListAndConnectedApps(hiddenAppListNew, connectedAppsNew)
+                multiUserConfig.remove(packageName)
+                updateHiddenListAndConnectedApps(
+                    hiddenAppListNew,
+                    connectedAppsNew,
+                    multiUserConfig
+                )
             }
         }
     }
@@ -84,14 +95,25 @@ object ConfigHelper {
         val configFile =
             File("${ConfigConstant.CONFIG_FILE_FOLDER}${ConfigConstant.CONFIG_FILE_JSON}")
         return try {
-            JsonHelper.getConfigAdapter().fromJson(configFile.readText())
+            JsonHelper.configAdapter().fromJson(configFile.readText())
         } catch (e: Throwable) {
             XLog.e(e, "ConfigHelper loadConfigWithSystemApp failed.")
             null
         }
     }
 
-    private suspend fun updateConfigFileInner(configData: ConfigData) {
+    suspend fun updateConfig(configData: ConfigData) {
+        withContext(Dispatchers.IO) {
+            configDataFlow.value = configData
+            configClient.updateConfig(configData)
+        }
+    }
+
+    fun getServerVersion(): Int {
+        return configClient.serverVersion()
+    }
+
+    private suspend fun updateConfigInner(configData: ConfigData) {
         withContext(Dispatchers.IO) {
             configClient.updateConfig(configData)
         }
@@ -100,28 +122,33 @@ object ConfigHelper {
     fun updateHiddenListAndConnectedApps(
         hiddenAppListNew: Set<String>,
         connectedAppsNew: Map<String, Set<String>>,
+        multiUserConfig: Map<String, Set<Int>>,
         sharedUserIdMapNew: Map<String, String>? = null
     ) {
         val newConfigData = configDataFlow.value.copy(
-            hiddenAppList = hiddenAppListNew.toMutableSet(),
-            connectedApps = connectedAppsNew.toMutableMap(),
-            sharedUserIdMap = sharedUserIdMapNew?.toMutableMap()
+            hiddenAppList = hiddenAppListNew.toSet(),
+            connectedApps = connectedAppsNew.toMap(),
+            multiUserConfig = multiUserConfig.toMap(),
+            sharedUserIdMap = sharedUserIdMapNew?.toMap()
                 ?: configDataFlow.value.sharedUserIdMap
         )
         configDataFlow.value = newConfigData
         scope.launch {
-            updateConfigFileInner(newConfigData)
+            updateConfigInner(newConfigData)
         }
     }
 
-    fun updateWhitelist(whitelistNew: Set<String>, sharedUserIdMapNew: Map<String, String>) {
+    fun updateWhitelist(
+        whitelistNew: Set<String>,
+        sharedUserIdMapNew: Map<String, String>
+    ) {
         val newConfigData = configDataFlow.value.copy(
-            whitelist = whitelistNew.toMutableSet(),
-            sharedUserIdMap = sharedUserIdMapNew.toMutableMap()
+            whitelist = whitelistNew.toSet(),
+            sharedUserIdMap = sharedUserIdMapNew.toMap()
         )
         configDataFlow.value = newConfigData
         scope.launch {
-            updateConfigFileInner(newConfigData)
+            updateConfigInner(newConfigData)
         }
     }
 
@@ -135,12 +162,16 @@ object ConfigHelper {
         )
         configDataFlow.value = newConfigData
         scope.launch {
-            updateConfigFileInner(newConfigData)
+            updateConfigInner(newConfigData)
         }
     }
 
     fun rebootTheSystem() {
         configClient.rebootTheSystem()
+    }
+
+    suspend fun queryAllUsers(): List<SystemUserInfo>? {
+        return configClient.querySystemUserList()
     }
 
     fun ResolveInfo.getPackageName(): String? {

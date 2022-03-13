@@ -1,14 +1,18 @@
 package cn.geektang.privacyspace.util
 
 import android.app.ActivityThread
+import android.content.pm.UserInfo
 import android.os.Binder
 import android.os.SystemProperties
 import cn.geektang.privacyspace.BuildConfig
+import cn.geektang.privacyspace.bean.SystemUserInfo
 import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.hook.HookMain
 import de.robv.android.xposed.XC_MethodHook
+import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import java.io.File
+import java.lang.reflect.Method
 
 class ConfigServer : XC_MethodHook() {
     companion object {
@@ -17,12 +21,14 @@ class ConfigServer : XC_MethodHook() {
         const val QUERY_CONFIG = "queryConfig"
         const val UPDATE_CONFIG = "updateConfig:"
         const val REBOOT_THE_SYSTEM = "rebootTheSystem"
+        const val GET_USERS = "getUsers"
 
         const val EXEC_SUCCEED = "1"
         const val EXEC_FAILED = "0"
     }
 
     private var pmsClass: Class<*>? = null
+    private var userInfoListCache: Collection<*>? = null
 
     fun start(classLoader: ClassLoader) {
         pmsClass = HookUtil.loadPms(classLoader)
@@ -37,6 +43,23 @@ class ConfigServer : XC_MethodHook() {
             String::class.java,
             this
         )
+
+        val userManagerClass = try {
+            classLoader.tryLoadClass("com.android.server.pm.UserManagerService")
+        } catch (e: ClassNotFoundException) {
+            XLog.e(e, "Find UserManagerService failed.")
+            return
+        }
+        userManagerClass.declaredMethods.filter { method ->
+            method.checkIsGetUsersMethod()
+        }.forEach { method ->
+            XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                override fun afterHookedMethod(param: MethodHookParam) {
+                    val userInfoListTmp = param.result as? Collection<*>? ?: return
+                    userInfoListCache = userInfoListTmp
+                }
+            })
+        }
     }
 
     override fun beforeHookedMethod(param: MethodHookParam) {
@@ -68,6 +91,19 @@ class ConfigServer : XC_MethodHook() {
                 SystemProperties.set("sys.powerctl", "reboot")
                 param.result = ""
             }
+            firstArg == GET_USERS -> {
+                val users = userInfoListCache
+                val systemUsers = mutableListOf<SystemUserInfo>()
+                users?.forEach { userInfo ->
+                    if (userInfo !is UserInfo) return
+                    val systemUserInfo = SystemUserInfo(
+                        id = userInfo.id,
+                        name = userInfo.name
+                    )
+                    systemUsers.add(systemUserInfo)
+                }
+                param.result = JsonHelper.systemUserInfoListAdapter().toJson(systemUsers)
+            }
             firstArg.startsWith(UPDATE_CONFIG) -> {
                 val arg = firstArg.substring(UPDATE_CONFIG.length)
                 updateConfig(arg)
@@ -91,7 +127,7 @@ class ConfigServer : XC_MethodHook() {
             File("${ConfigConstant.CONFIG_FILE_FOLDER}${ConfigConstant.CONFIG_FILE_JSON}")
         configFile.parentFile?.mkdirs()
         try {
-            val configData = JsonHelper.getConfigAdapter().fromJson(configJson)
+            val configData = JsonHelper.configAdapter().fromJson(configJson)
             if (null != configData) {
                 HookMain.updateConfigData(configData)
                 configFile.writeText(configJson)
@@ -120,5 +156,24 @@ class ConfigServer : XC_MethodHook() {
             newConfigFile.parentFile?.mkdirs()
             originalFile.copyTo(newConfigFile)
         }
+    }
+
+    private fun Method.checkIsGetUsersMethod(): Boolean {
+        if (name != "getUsers") {
+            return false
+        }
+        var isGetUsersMethod = false
+        if (parameterCount == 1 && parameterTypes.first() == Boolean::class.javaPrimitiveType) {
+            isGetUsersMethod = true
+        } else if (parameterCount == 3) {
+            isGetUsersMethod = true
+            for (parameterType in parameterTypes) {
+                if (parameterType != Boolean::class.javaPrimitiveType) {
+                    isGetUsersMethod = false
+                    break
+                }
+            }
+        }
+        return isGetUsersMethod
     }
 }

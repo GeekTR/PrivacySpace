@@ -3,10 +3,6 @@ package cn.geektang.privacyspace.ui.screen.setwhitelist
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -27,6 +23,7 @@ fun SetWhitelistScreen(viewModel: SetWhitelistViewModel = viewModel()) {
     val whitelist by viewModel.whitelistFlow.collectAsState()
     val showSystemApps by viewModel.showSystemAppsFlow.collectAsState()
     val searchText by viewModel.searchTextFlow.collectAsState()
+    val showSelectAll by viewModel.showSelectAll.collectAsState()
     val actions = object : SetWhitelistActions {
         override fun addApp2Whitelist(appInfo: AppInfo) {
             viewModel.addApp2Whitelist(appInfo)
@@ -43,6 +40,10 @@ fun SetWhitelistScreen(viewModel: SetWhitelistViewModel = viewModel()) {
         override fun onSearchTextChange(searchText: String) {
             viewModel.updateSearchText(searchText)
         }
+
+        override fun selectAllSystemApps(selectAll: Boolean) {
+            viewModel.selectAllSystemApps(selectAll)
+        }
     }
     SetWhiteListContent(
         appList = appList,
@@ -50,6 +51,7 @@ fun SetWhitelistScreen(viewModel: SetWhitelistViewModel = viewModel()) {
         searchText = searchText,
         isLoading = isLoading,
         showSystemApps = showSystemApps,
+        showSelectAll = showSelectAll,
         actions = actions
     )
     OnLifecycleEvent(onEvent = { event ->
@@ -69,6 +71,7 @@ private fun SetWhiteListContent(
     searchText: String,
     isLoading: Boolean,
     showSystemApps: Boolean,
+    showSelectAll : Boolean,
     actions: SetWhitelistActions
 ) {
     val navHostController = LocalNavHostController.current
@@ -78,9 +81,12 @@ private fun SetWhiteListContent(
     SetWhitelistPopupMenu(
         isPopupMenuShow,
         showSystemApps,
+        showSelectAll,
         onSystemAppsVisibleChange = { showSystemApps ->
             isPopupMenuShow.value = false
             actions.setSystemAppsVisible(showSystemApps)
+        }, selectAllCallback = { selectAll ->
+            actions.selectAllSystemApps(selectAll)
         })
     Column {
         SearchTopBar(
@@ -113,7 +119,9 @@ private fun SetWhiteListContent(
 private fun SetWhitelistPopupMenu(
     popupMenuShow: MutableState<Boolean>,
     showSystemApps: Boolean,
-    onSystemAppsVisibleChange: (Boolean) -> Unit
+    showSelectAll : Boolean,
+    onSystemAppsVisibleChange: (Boolean) -> Unit,
+    selectAllCallback: (Boolean) -> Unit
 ) {
     PopupMenu(isShow = popupMenuShow) {
         Column(
@@ -125,6 +133,11 @@ private fun SetWhitelistPopupMenu(
                 text = stringResource(R.string.display_system_apps),
                 checked = showSystemApps,
                 onCheckedChange = onSystemAppsVisibleChange
+            )
+            PopupCheckboxItem(
+                text = stringResource(R.string.select_all_system_apps),
+                checked = showSelectAll,
+                onCheckedChange = selectAllCallback
             )
         }
     }
@@ -141,6 +154,10 @@ interface SetWhitelistActions {
     }
 
     fun onSearchTextChange(searchText: String) {
+
+    }
+
+    fun selectAllSystemApps(selectAll: Boolean) {
 
     }
 }

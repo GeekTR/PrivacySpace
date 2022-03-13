@@ -68,11 +68,13 @@ object FrameworkHookerApi28Impl : XC_MethodHook(), Hooker {
     private fun hookApplyPostResolutionFilter(param: MethodHookParam) {
         val resultList = param.result as? MutableList<*> ?: return
         val callingUid = param.args[3] as? Int ?: return
+        val userId = param.args[5] as? Int ?: return
         val callingPackageName = getPackageName(param.thisObject, callingUid) ?: return
         val waitRemoveList = mutableListOf<ResolveInfo>()
         for (resolveInfo in resultList) {
             val targetPackageName = (resolveInfo as? ResolveInfo)?.getPackageName() ?: continue
             val shouldIntercept = HookChecker.shouldIntercept(
+                userId,
                 targetPackageName,
                 callingPackageName
             )
@@ -96,9 +98,11 @@ object FrameworkHookerApi28Impl : XC_MethodHook(), Hooker {
         val packageSetting = param.args.first()
         val targetPackageName = packageSetting?.packageName ?: return
         val callingUid = param.args[1] as Int
+        val userId = param.args[2] as Int
         val callingPackageName = getPackageName(param.thisObject, callingUid) ?: return
 
         val shouldIntercept = HookChecker.shouldIntercept(
+            userId,
             targetPackageName,
             callingPackageName
         )
