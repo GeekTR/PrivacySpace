@@ -25,7 +25,7 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
     val hiddenAppList = mutableStateListOf<AppInfo>()
     val configData = mutableStateOf(ConfigData.EMPTY)
     val systemUsers = mutableStateListOf<SystemUserInfo>()
-    val dualAppsSettingsMap = mutableStateMapOf<String, Set<Int>>()
+    val multiUserConfig = mutableStateMapOf<String, Set<Int>>()
     private val sharedUserIdMap = mutableMapOf<String, String>()
     private val connectedApps = mutableMapOf<String, Set<String>>()
     private var needSync = false
@@ -48,8 +48,8 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
                 connectedApps.clear()
                 connectedApps.putAll(it.connectedApps)
 
-                dualAppsSettingsMap.clear()
-                dualAppsSettingsMap.putAll(it.dualAppsSettingsMap ?: emptyMap())
+                multiUserConfig.clear()
+                multiUserConfig.putAll(it.multiUserConfig ?: emptyMap())
             }
         }
     }
@@ -90,6 +90,9 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
 
     fun cancelHide(appInfo: AppInfo) {
         val hasChange = this.hiddenAppList.removeIf { it.packageName == appInfo.packageName }
+        if (hasChange) {
+            multiUserConfig.remove(appInfo.packageName)
+        }
         needSync = needSync or hasChange
     }
 
@@ -133,17 +136,17 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
                 hiddenAppList = hiddenAppList.map { it.packageName }.toSet(),
                 sharedUserIdMap = sharedUserIdMap.toMap(),
                 connectedApps = connectedApps.toMap(),
-                dualAppsSettingsMap = dualAppsSettingsMap.toMap()
+                multiUserConfig = multiUserConfig.toMap()
             )
         )
     }
 
-    fun changeDualAppsSettingsMap(appInfo: AppInfo, checkedUsers: Set<Int>?) {
-        if (dualAppsSettingsMap[appInfo.packageName] != checkedUsers) {
+    fun changeMultiUserConfig(appInfo: AppInfo, checkedUsers: Set<Int>?) {
+        if (multiUserConfig[appInfo.packageName] != checkedUsers) {
             if (null == checkedUsers) {
-                dualAppsSettingsMap.remove(appInfo.packageName)
+                multiUserConfig.remove(appInfo.packageName)
             } else {
-                dualAppsSettingsMap[appInfo.packageName] = checkedUsers
+                multiUserConfig[appInfo.packageName] = checkedUsers
             }
             needSync = true
 

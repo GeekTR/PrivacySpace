@@ -40,4 +40,5 @@
     <string name="checked_means_needs_to_be_hidden">勾選則代表需要對其隱藏</string>
     <string name="multi_users_settings">多用戶設置</string>
     <string name="configuration_takes_effect_after_restarting_the_phone_system">此配置需要重啟手機系統後生效</string>
+    <string name="select_all_system_apps">全選系統App</string>
 </resources>

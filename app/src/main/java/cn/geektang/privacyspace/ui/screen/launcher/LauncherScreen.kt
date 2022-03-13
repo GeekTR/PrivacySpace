@@ -52,7 +52,6 @@ import cn.geektang.privacyspace.ui.widget.TopBar
 import cn.geektang.privacyspace.util.*
 import cn.geektang.privacyspace.util.AppHelper.getLauncherPackageName
 import coil.compose.rememberImagePainter
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.system.exitProcess
 
@@ -62,11 +61,11 @@ fun LauncherScreen(
 ) {
     val appList = viewModel.hiddenAppList
     val systemUsers = viewModel.systemUsers
-    val dualAppsSettingsMap = viewModel.dualAppsSettingsMap
+    val multiUserConfig = viewModel.multiUserConfig
     val configData by viewModel.configData
     val loadStatus by ConfigHelper.loadingStatusFlow.collectAsState()
     val context = LocalContext.current
-    val isShowDualAppsSettingsDialog = remember {
+    val isShowMultiUserConfigSettingsDialog = remember {
         mutableStateOf(false)
     }
     val focusAppInfo = remember {
@@ -92,13 +91,13 @@ fun LauncherScreen(
             viewModel.disconnectTo(sourceApp, targetApp)
         }
 
-        override fun onDualAppsSettingsItemClick(appInfo: AppInfo) {
+        override fun onMultiUserConfigSettingsItemClick(appInfo: AppInfo) {
             focusAppInfo.value = appInfo
-            isShowDualAppsSettingsDialog.value = true
+            isShowMultiUserConfigSettingsDialog.value = true
         }
 
-        override fun changeDualAppsSettingsMap(appInfo: AppInfo, checkedUsers: Set<Int>?) {
-            viewModel.changeDualAppsSettingsMap(appInfo, checkedUsers)
+        override fun changeMultiUserConfigSettingsMap(appInfo: AppInfo, checkedUsers: Set<Int>?) {
+            viewModel.changeMultiUserConfig(appInfo, checkedUsers)
         }
     }
 
@@ -125,12 +124,12 @@ fun LauncherScreen(
         AdjustLayoutDialog(showAdjustLayoutDialog, cellCount, cellContentPaddingRatio)
     }
 
-    if (isShowDualAppsSettingsDialog.value) {
-        DualAppsSettingDialog(
-            showState = isShowDualAppsSettingsDialog,
+    if (isShowMultiUserConfigSettingsDialog.value) {
+        MultiUserConfigSettingDialog(
+            showState = isShowMultiUserConfigSettingsDialog,
             appInfo = focusAppInfo.value,
             systemUsers = systemUsers,
-            dualAppsSettingsMap = dualAppsSettingsMap,
+            multiUserConfigSettingsMap = multiUserConfig,
             actions = actions
         )
     }
@@ -249,8 +248,8 @@ private fun LauncherScreenContent(
             isShowPopupMenu.value = false
         }
 
-        override fun onDualAppsSettingsItemClick(appInfo: AppInfo) {
-            actions.onDualAppsSettingsItemClick(appInfo)
+        override fun onMultiUserConfigSettingsItemClick(appInfo: AppInfo) {
+            actions.onMultiUserConfigSettingsItemClick(appInfo)
             isShowPopupMenu.value = false
         }
     }
@@ -369,7 +368,7 @@ private fun AppItemPopupMenu(
                     })
                     if (systemUsers.isNotEmpty()) {
                         PopupItem(text = stringResource(R.string.multi_users_settings), onClick = {
-                            actions.onDualAppsSettingsItemClick(popupMenuAppInfo!!)
+                            actions.onMultiUserConfigSettingsItemClick(popupMenuAppInfo!!)
                         })
                     }
                 }
@@ -641,10 +640,10 @@ interface LauncherActions {
 
     }
 
-    fun onDualAppsSettingsItemClick(appInfo: AppInfo) {
+    fun onMultiUserConfigSettingsItemClick(appInfo: AppInfo) {
     }
 
-    fun changeDualAppsSettingsMap(appInfo: AppInfo, checkedUsers: Set<Int>?) {
+    fun changeMultiUserConfigSettingsMap(appInfo: AppInfo, checkedUsers: Set<Int>?) {
     }
 }
 
@@ -727,14 +726,14 @@ private fun RadioButton(cellCount: Int, isChecked: Boolean, onClick: () -> Unit)
 }
 
 @Composable
-private fun DualAppsSettingDialog(
+private fun MultiUserConfigSettingDialog(
     showState: MutableState<Boolean>,
     appInfo: AppInfo?,
     systemUsers: List<SystemUserInfo>,
-    dualAppsSettingsMap: Map<String, Set<Int>>,
+    multiUserConfigSettingsMap: Map<String, Set<Int>>,
     actions: LauncherActions
 ) {
-    val targetSetting = dualAppsSettingsMap[appInfo?.packageName ?: ""]
+    val targetSetting = multiUserConfigSettingsMap[appInfo?.packageName ?: ""]
     val usersCheckedStatus = remember(appInfo) {
         mutableStateOf(usersWithCheckedStatus(systemUsers, targetSetting))
     }
@@ -746,14 +745,14 @@ private fun DualAppsSettingDialog(
                 actions.cancelHide(appInfo!!)
             }
             users.isAllChecked() -> {
-                actions.changeDualAppsSettingsMap(appInfo!!, null)
+                actions.changeMultiUserConfigSettingsMap(appInfo!!, null)
             }
             else -> {
-                actions.changeDualAppsSettingsMap(appInfo!!, users.toCheckedStatusSet())
+                actions.changeMultiUserConfigSettingsMap(appInfo!!, users.toCheckedStatusSet())
             }
         }
     }) {
-        DualAppsSettingDialogContent(usersCheckedStatus)
+        MultiUserConfigSettingDialogContent(usersCheckedStatus)
     }
 }
 
@@ -793,7 +792,7 @@ private fun usersWithCheckedStatus(
 ) = systemUsers.map { it to (null == targetSetting || targetSetting.contains(it.id)) }
 
 @Composable
-private fun DualAppsSettingDialogContent(users: MutableState<List<Pair<SystemUserInfo, Boolean>>>) {
+private fun MultiUserConfigSettingDialogContent(users: MutableState<List<Pair<SystemUserInfo, Boolean>>>) {
     Surface(modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large) {
         Column(modifier = Modifier.padding(horizontal = 15.dp, vertical = 20.dp)) {
             Text(

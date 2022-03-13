@@ -44,12 +44,12 @@ class HookMain : IXposedHookLoadPackage {
             private set
 
         @Volatile
-        var dualAppsSettingsMap: Map<String, Set<Int>> = emptyMap()
+        var multiUserConfig: Map<String, Set<Int>> = emptyMap()
 
         fun updateConfigData(data: ConfigData) {
             enableLog = data.enableDetailLog
             hiddenAppList = data.hiddenAppList
-            dualAppsSettingsMap = data.dualAppsSettingsMap ?: emptyMap()
+            multiUserConfig = data.multiUserConfig ?: emptyMap()
             val sharedUserIdMap = data.sharedUserIdMap
             val whitelistTmp = data.whitelist.toMutableSet()
             val connectedAppsTpm = data.connectedApps.toMutableMap()
