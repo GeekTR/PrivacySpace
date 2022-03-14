@@ -34,11 +34,11 @@
     <string name="screen_layout">調整佈局</string>
     <string name="icon_size">圖示大小</string>
     <string name="icon_size_per_line">每行%d個</string>
-    <string name="tips_get_apps_failed">獲取App列表失敗,請授予獲取應用列表權限</string>
+    <string name="tips_get_apps_failed">獲取App列表失敗,請授予獲取應用列表許可權</string>
     <string name="connect_with_desktop">與桌面關聯</string>
     <string name="disconnect_with_desktop">取消關聯桌面</string>
     <string name="checked_means_needs_to_be_hidden">勾選則代表需要對其隱藏</string>
-    <string name="multi_users_settings">多用戶設置</string>
+    <string name="multi_users_settings">多使用者設定</string>
     <string name="configuration_takes_effect_after_restarting_the_phone_system">此配置需要重啟手機系統後生效</string>
     <string name="select_all_system_apps">全選系統App</string>
 </resources>
