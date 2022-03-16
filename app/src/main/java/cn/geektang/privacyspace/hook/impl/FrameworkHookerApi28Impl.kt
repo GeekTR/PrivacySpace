@@ -98,7 +98,7 @@ object FrameworkHookerApi28Impl : XC_MethodHook(), Hooker {
         val packageSetting = param.args.first()
         val targetPackageName = packageSetting?.packageName ?: return
         val callingUid = param.args[1] as Int
-        val userId = param.args[2] as Int
+        val userId = param.args[4] as Int
         val callingPackageName = getPackageName(param.thisObject, callingUid) ?: return
 
         val shouldIntercept = HookChecker.shouldIntercept(
