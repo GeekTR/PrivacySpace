@@ -41,4 +41,7 @@
     <string name="multi_users_settings">多用户配置</string>
     <string name="configuration_takes_effect_after_restarting_the_phone_system">此配置需要重启手机系统生效</string>
     <string name="select_all_system_apps">全选系统App</string>
+    <string name="cancel">取消</string>
+    <string name="confirm">确认</string>
+    <string name="tips_confirm_restart_system">您确认重启系统吗？</string>
 </resources>

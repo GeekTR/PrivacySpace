@@ -26,6 +26,7 @@ object ConfigConstant {
         "com.android.packageinstaller",
         "com.google.android.packageinstaller",
         "com.google.android.providers.media.module",
+        "com.google.android.permissioncontroller",
         BuildConfig.APPLICATION_ID
     )
 }

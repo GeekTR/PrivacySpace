@@ -9,8 +9,8 @@
     <string name="loading">Loading…</string>
     <string name="set_connected_apps">Connected with others</string>
     <string name="tips">Tips</string>
-    <string name="launcher_notice_cancel">Cancel</string>
-    <string name="launcher_notice_confirm">Confirm</string>
+    <string name="launcher_notice_cancel">@android:string/cancel</string>
+    <string name="launcher_notice_confirm">CONFIRM</string>
     <string name="app_is_uninstalled">%s is uninstalled</string>
     <string name="uninstall">Uninstall</string>
     <string name="unhide">Unhide</string>
@@ -41,4 +41,7 @@
     <string name="multi_users_settings">Set for multi-user</string>
     <string name="configuration_takes_effect_after_restarting_the_phone_system">This configuration takes effect after restarting the phone system</string>
     <string name="select_all_system_apps">Select all system apps</string>
+    <string name="cancel">@android:string/cancel</string>
+    <string name="confirm">CONFIRM</string>
+    <string name="tips_confirm_restart_system">您确认重启系统吗？</string>
 </resources>

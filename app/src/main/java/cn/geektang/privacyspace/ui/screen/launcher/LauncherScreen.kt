@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -268,11 +269,28 @@ private fun LauncherScreenContent(
             title = stringResource(id = R.string.app_name),
             showNavigationIcon = false,
             actions = {
-                IconButton(onClick = { isPopupMenuShow.value = true }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = stringResource(R.string.menu)
-                    )
+                val context = LocalContext.current
+                val navController = LocalNavHostController.current
+                Row {
+                    IconButton(onClick = {
+                        if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
+                            context.showToast(context.getString(R.string.tips_go_active))
+                            return@IconButton
+                        }
+                        isPopupMenuShow.value = false
+                        navController.navigate(RouteConstant.ADD_HIDDEN_APPS)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = stringResource(id = R.string.add_hidden_apps)
+                        )
+                    }
+                    IconButton(onClick = { isPopupMenuShow.value = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.menu)
+                        )
+                    }
                 }
             }
         )
@@ -444,14 +462,7 @@ private fun PopupMenuContent(
                 }
             }
         }
-        PopupItem(text = stringResource(R.string.reboot_system)) {
-            if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
-                context.showToast(context.getString(R.string.tips_go_active))
-                return@PopupItem
-            }
-            isPopupMenuShow.value = false
-            ConfigHelper.rebootTheSystem()
-        }
+        RestartSystemPopupItem(loadStatus, context, isPopupMenuShow)
         PopupItem(text = stringResource(R.string.screen_layout)) {
             if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
                 context.showToast(context.getString(R.string.tips_go_active))
@@ -481,6 +492,43 @@ private fun PopupMenuContent(
             isPopupMenuShow.value = false
             context.openUrl("https://github.com/GeekTR/PrivacySpace")
         })
+    }
+}
+
+@Composable
+private fun RestartSystemPopupItem(
+    loadStatus: Int,
+    context: Context,
+    isPopupMenuShow: MutableState<Boolean>
+) {
+    var isShowConfirmDialog by remember {
+        mutableStateOf(false)
+    }
+    if (isShowConfirmDialog) {
+        AlertDialog(onDismissRequest = { }, text = {
+            Text(modifier = Modifier.fillMaxWidth(), text = stringResource(R.string.tips_confirm_restart_system))
+        }, buttons = {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = { isShowConfirmDialog = false }) {
+                    Text(text = stringResource(R.string.cancel))
+                }
+                TextButton(onClick = {
+                    if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
+                        context.showToast(context.getString(R.string.tips_go_active))
+                        return@TextButton
+                    }
+                    isPopupMenuShow.value = false
+                    isShowConfirmDialog = false
+                    ConfigHelper.rebootTheSystem()
+                }) {
+                    Text(text = stringResource(R.string.confirm))
+                }
+            }
+        })
+    }
+
+    PopupItem(text = stringResource(R.string.reboot_system)) {
+        isShowConfirmDialog = true
     }
 }
 
