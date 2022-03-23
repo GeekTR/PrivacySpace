@@ -24,6 +24,7 @@ import cn.geektang.privacyspace.R
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.ui.widget.*
 import cn.geektang.privacyspace.util.*
+import com.google.accompanist.insets.navigationBarsPadding
 import kotlin.system.exitProcess
 
 @Composable
@@ -131,6 +132,9 @@ fun AddHiddenAppsContent(
                             actions.removeApp2HiddenList(appInfo)
                         }
                     })
+                }
+                item {
+                    Box(modifier = Modifier.navigationBarsPadding())
                 }
             })
         }

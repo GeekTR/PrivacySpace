@@ -449,6 +449,14 @@ private fun PopupMenuContent(
             isPopupMenuShow.value = false
             navController.navigate(RouteConstant.ADD_HIDDEN_APPS)
         }
+        PopupItem(text = stringResource(R.string.blind)) {
+            if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
+                context.showToast(context.getString(R.string.tips_go_active))
+                return@PopupItem
+            }
+            isPopupMenuShow.value = false
+            navController.navigate(RouteConstant.ADD_BLIND_APPS)
+        }
         PopupItem(text = stringResource(R.string.reboot_desktop)) {
             isPopupMenuShow.value = false
             scope.launch {
@@ -506,7 +514,10 @@ private fun RestartSystemPopupItem(
     }
     if (isShowConfirmDialog) {
         AlertDialog(onDismissRequest = { }, text = {
-            Text(modifier = Modifier.fillMaxWidth(), text = stringResource(R.string.tips_confirm_restart_system))
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                text = stringResource(R.string.tips_confirm_restart_system)
+            )
         }, buttons = {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = { isShowConfirmDialog = false }) {

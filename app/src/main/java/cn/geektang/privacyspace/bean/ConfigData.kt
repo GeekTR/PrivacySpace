@@ -12,7 +12,8 @@ data class ConfigData(
     val whitelist: Set<String>,
     val connectedApps: Map<String, Set<String>>,
     val sharedUserIdMap: Map<String, String>?,
-    val multiUserConfig: Map<String, Set<Int>>?
+    val multiUserConfig: Map<String, Set<Int>>?,
+    val blind: Set<String>?
 ) {
     companion object {
         val EMPTY = ConfigData(
@@ -21,7 +22,8 @@ data class ConfigData(
             whitelist = emptySet(),
             connectedApps = emptyMap(),
             sharedUserIdMap = emptyMap(),
-            multiUserConfig = emptyMap()
+            multiUserConfig = emptyMap(),
+            blind = emptySet()
         )
     }
 }

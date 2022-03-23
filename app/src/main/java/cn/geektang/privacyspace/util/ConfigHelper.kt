@@ -138,6 +138,17 @@ object ConfigHelper {
         }
     }
 
+    fun updateBlindApps(whitelistNew: Set<String>, blindAppsListNew: Set<String>) {
+        val newConfigData = configDataFlow.value.copy(
+            whitelist = whitelistNew.toSet(),
+            blind = blindAppsListNew.toSet()
+        )
+        configDataFlow.value = newConfigData
+        scope.launch {
+            updateConfigInner(newConfigData)
+        }
+    }
+
     fun updateWhitelist(
         whitelistNew: Set<String>,
         sharedUserIdMapNew: Map<String, String>

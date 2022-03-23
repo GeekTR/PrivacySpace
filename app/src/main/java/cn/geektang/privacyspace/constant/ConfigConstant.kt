@@ -14,7 +14,6 @@ object ConfigConstant {
         "com.android.providers.media.module",
         "com.lbe.security.miui",
         "com.google.android.documentsui",
-        "com.android.vending",
         "android.uid.phone",
         "com.topjohnwu.magisk",
         "android.uid.nfc",
@@ -28,5 +27,9 @@ object ConfigConstant {
         "com.google.android.providers.media.module",
         "com.google.android.permissioncontroller",
         BuildConfig.APPLICATION_ID
+    )
+
+    val defaultBlindWhitelist = setOf(
+        "com.android.providers.settings"
     )
 }

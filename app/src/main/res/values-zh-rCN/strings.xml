@@ -44,4 +44,5 @@
     <string name="cancel">取消</string>
     <string name="confirm">确认</string>
     <string name="tips_confirm_restart_system">您确认重启系统吗？</string>
+    <string name="blind">致盲</string>
 </resources>

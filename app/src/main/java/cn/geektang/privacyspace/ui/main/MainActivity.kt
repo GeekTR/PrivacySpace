@@ -17,6 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import cn.geektang.privacyspace.constant.RouteConstant
+import cn.geektang.privacyspace.ui.screen.blind.AddBlindAppsScreen
 import cn.geektang.privacyspace.ui.screen.launcher.LauncherScreen
 import cn.geektang.privacyspace.ui.screen.managehiddenapps.AddHiddenAppsScreen
 import cn.geektang.privacyspace.ui.screen.setconnectedapps.SetConnectedAppsScreen
@@ -87,6 +88,9 @@ private fun Content() {
                     type = NavType.StringType
                 }
                 SetConnectedAppsScreen()
+            }
+            composable(RouteConstant.ADD_BLIND_APPS) {
+                AddBlindAppsScreen()
             }
         }
     }

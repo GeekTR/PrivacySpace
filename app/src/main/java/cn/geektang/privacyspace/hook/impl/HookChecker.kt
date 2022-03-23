@@ -10,15 +10,27 @@ object HookChecker {
         targetPackageName: String,
         callingPackageName: String
     ): Boolean {
+        if (callingPackageName == targetPackageName) {
+            return false
+        }
+
         var result = false
         val shouldFilterAppList = HookMain.hiddenAppList
         val userWhitelist = HookMain.whitelist
         val connectedAppsInfoMap = HookMain.connectedApps
         val multiUserConfig = HookMain.multiUserConfig
+        val blindApps = HookMain.blind
         val defaultWhitelist = ConfigConstant.defaultWhitelist
+        val defaultBlindWhitelist = ConfigConstant.defaultBlindWhitelist
 
-        if (callingPackageName != targetPackageName
-            && !defaultWhitelist.contains(callingPackageName)
+        if (!defaultBlindWhitelist.contains(targetPackageName)
+            && blindApps.contains(callingPackageName)
+        ) {
+            XLog.i("$callingPackageName was prevented from reading ${targetPackageName}.")
+            return true
+        }
+
+        if (!defaultWhitelist.contains(callingPackageName)
             && shouldFilterAppList.contains(targetPackageName)
         ) {
             val appMultiUserConfig = multiUserConfig[targetPackageName]

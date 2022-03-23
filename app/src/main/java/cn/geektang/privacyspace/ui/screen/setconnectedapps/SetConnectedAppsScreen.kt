@@ -21,6 +21,7 @@ import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.ui.widget.*
 import cn.geektang.privacyspace.util.LocalNavHostController
 import cn.geektang.privacyspace.util.OnLifecycleEvent
+import com.google.accompanist.insets.navigationBarsPadding
 
 @Composable
 fun SetConnectedAppsScreen(viewModel: SetConnectedAppsViewModel = viewModel()) {
@@ -122,6 +123,9 @@ private fun SetConnectedAppsContent(
                             actions.removeApp2Whitelist(appInfo)
                         }
                     }
+                }
+                item {
+                    Box(modifier = Modifier.navigationBarsPadding())
                 }
             })
         }
