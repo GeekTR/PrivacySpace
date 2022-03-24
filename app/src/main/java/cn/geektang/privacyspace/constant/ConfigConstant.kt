@@ -12,6 +12,22 @@ object ConfigConstant {
         "com.android.systemui",
         "android.uid.system",
         "com.android.providers.media.module",
+        "com.android.providers.telephony",
+        "com.android.providers.calendar",
+        "com.android.providers.media",
+        "com.android.providers.downloads",
+        "com.android.providers.downloads.ui",
+        "com.android.providers.settings",
+        "com.android.providers.partnerbookmarks",
+        "com.android.providers.settings.auto_generated_rro_product__",
+        "com.android.providers.contacts.auto_generated_rro_product__",
+        "com.android.providers.telephony.auto_generated_rro_product__",
+        "com.android.bookmarkprovider",
+        "com.android.providers.blockednumber",
+        "com.android.providers.userdictionary",
+        "com.android.providers.media.module",
+        "com.android.providers.contacts",
+        "com.android.permissioncontroller",
         "com.lbe.security.miui",
         "com.google.android.documentsui",
         "android.uid.phone",
@@ -30,6 +46,14 @@ object ConfigConstant {
     )
 
     val defaultBlindWhitelist = setOf(
-        "com.android.providers.settings"
+        "android",
+        "com.miui.securitycenter",
+        "com.miui.catcherpatch",
+        "com.miui.home",
+        "com.android.providers.media",
+        "com.android.providers.settings",
+        "com.miui.contentcatcher",
+        "com.xiaomi.mirror",
+        "com.google.android.webview"
     )
 }

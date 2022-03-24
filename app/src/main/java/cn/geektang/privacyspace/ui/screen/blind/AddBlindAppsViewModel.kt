@@ -1,14 +1,11 @@
 package cn.geektang.privacyspace.ui.screen.blind
 
 import android.app.Application
-import android.content.pm.PackageManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.bean.AppInfo
-import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.util.AppHelper
-import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
 import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.setDifferentValue
@@ -82,6 +79,7 @@ class AddBlindAppsViewModel(private val context: Application) : AndroidViewModel
     override fun removeApp2BlindList(appInfo: AppInfo) {
         val newAppsList = blindAppsListFlow.value.toMutableSet()
         newAppsList.remove(appInfo.packageName)
+        blindAppsListFlow.value = newAppsList
         isModified = true
     }
 

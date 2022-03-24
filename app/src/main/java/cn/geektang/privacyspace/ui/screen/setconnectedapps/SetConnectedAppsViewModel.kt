@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.util.AppHelper
-import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
 import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.setDifferentValue
@@ -95,7 +94,7 @@ class SetConnectedAppsViewModel(
     }
 
     fun addApp2HiddenList(appInfo: AppInfo) {
-        val sharedUserId = appInfo.getSharedUserId(context)
+        val sharedUserId = appInfo.sharedUserId
         if (!sharedUserId.isNullOrEmpty()) {
             sharedUserIdMap[appInfo.packageName] = sharedUserId
         }

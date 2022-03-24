@@ -498,7 +498,10 @@ private fun PopupMenuContent(
         })
         PopupItem(text = stringResource(R.string.view_update_info_github), onClick = {
             isPopupMenuShow.value = false
-            context.openUrl("https://github.com/GeekTR/PrivacySpace")
+            try {
+                context.openUrl("https://github.com/GeekTR/PrivacySpace")
+            } catch (ignored: Throwable) {
+            }
         })
     }
 }
@@ -656,6 +659,7 @@ fun LauncherScreenPreview() {
         appIcon = ColorDrawable(),
         packageName = BuildConfig.APPLICATION_ID,
         appName = context.getString(R.string.app_name),
+        sharedUserId = null,
         isXposedModule = true,
         isSystemApp = true,
         applicationInfo = ApplicationInfo()

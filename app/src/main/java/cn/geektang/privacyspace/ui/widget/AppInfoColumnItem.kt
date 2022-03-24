@@ -18,6 +18,7 @@ import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.R
 import cn.geektang.privacyspace.bean.AppInfo
 import coil.compose.rememberImagePainter
+import com.google.accompanist.flowlayout.FlowRow
 
 @Composable
 fun AppInfoColumnItem(appInfo: AppInfo, isChecked: Boolean, onClick: () -> Unit) {
@@ -47,13 +48,16 @@ fun AppInfoColumnItem(appInfo: AppInfo, isChecked: Boolean, onClick: () -> Unit)
             if (appInfo.isXposedModule) {
                 chipTexts.add("XposedModule")
             }
+            if (!appInfo.sharedUserId.isNullOrEmpty()) {
+                chipTexts.add(appInfo.sharedUserId)
+            }
             if (chipTexts.isNotEmpty()) {
-                Row(modifier = Modifier.padding(top = 5.dp)) {
+                FlowRow {
                     for ((index, chipText) in chipTexts.withIndex()) {
                         if (index != 0) {
                             Spacer(modifier = Modifier.padding(start = 10.dp))
                         }
-                        Chip(text = chipText)
+                        Chip(modifier = Modifier.padding(top = 5.dp), text = chipText)
                     }
                 }
             }
@@ -72,6 +76,7 @@ fun AppInfoColumnItemPreview() {
         appIcon = ColorDrawable(),
         packageName = BuildConfig.APPLICATION_ID,
         appName = context.getString(R.string.app_name),
+        sharedUserId = null,
         isXposedModule = true,
         isSystemApp = true,
         applicationInfo = ApplicationInfo()

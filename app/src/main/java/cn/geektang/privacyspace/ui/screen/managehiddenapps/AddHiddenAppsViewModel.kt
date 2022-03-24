@@ -1,15 +1,12 @@
 package cn.geektang.privacyspace.ui.screen.managehiddenapps
 
 import android.app.Application
-import android.content.pm.PackageManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.util.AppHelper
-import cn.geektang.privacyspace.util.AppHelper.getPackageInfo
-import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
 import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.setDifferentValue
@@ -82,7 +79,7 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
     }
 
     fun addApp2HiddenList(appInfo: AppInfo) {
-        val targetSharedUserId = appInfo.getSharedUserId(context)
+        val targetSharedUserId = appInfo.sharedUserId
         if (!targetSharedUserId.isNullOrEmpty()) {
             sharedUserIdMap[appInfo.packageName] = targetSharedUserId
         }
@@ -91,18 +88,10 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
         hiddenAppList.add(appInfo.packageName)
         hiddenAppListFlow.value = hiddenAppList
         if (appInfo.isXposedModule && appInfo.packageName != BuildConfig.APPLICATION_ID) {
-            val packageInfo = getPackageInfo(
-                context,
-                appInfo.packageName,
-                PackageManager.GET_META_DATA
-            )
-            val scopeList = if (packageInfo == null) {
-                emptyList()
-            } else {
-                AppHelper.getXposedModuleScopeList(context, packageInfo.applicationInfo).filter {
+            val scopeList =
+                AppHelper.getXposedModuleScopeList(context, appInfo.applicationInfo).filter {
                     it != ConfigConstant.ANDROID_FRAMEWORK
                 }
-            }
 
             if (scopeList.isNotEmpty()) {
                 val connectedApps =

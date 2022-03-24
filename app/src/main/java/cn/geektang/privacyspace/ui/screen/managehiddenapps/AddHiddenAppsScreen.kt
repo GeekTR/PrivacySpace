@@ -170,6 +170,7 @@ fun AddHiddenAppsScreenPreview() {
         appIcon = ColorDrawable(),
         packageName = BuildConfig.APPLICATION_ID,
         appName = context.getString(R.string.app_name),
+        sharedUserId = null,
         isXposedModule = true,
         isSystemApp = false,
         applicationInfo = ApplicationInfo()

@@ -27,6 +27,8 @@ object AppHelper {
             val result = context.loadAllAppList()
             getAppsRetryTimes = 0
             result
+        } catch (ignored: CancellationException) {
+            return
         } catch (e: Exception) {
             val properties = ArrayMap<String, String>()
             properties["exception"] = e.javaClass.name
@@ -49,22 +51,19 @@ object AppHelper {
         return withContext(Dispatchers.IO) {
             val packageManager = packageManager
             return@withContext packageManager
-                .getInstalledApplications(PackageManager.MATCH_UNINSTALLED_PACKAGES)
-                .mapNotNull { applicationInfo ->
+                .getInstalledPackages(PackageManager.MATCH_UNINSTALLED_PACKAGES or PackageManager.GET_META_DATA)
+                .mapNotNull { packageInfo ->
+                    val applicationInfo = packageInfo.applicationInfo
                     val appName = applicationInfo.loadLabel(packageManager).toString()
                     val appIcon = applicationInfo.loadIcon(packageManager)
-                    val packageInfo = getPackageInfo(
-                        this@loadAllAppList,
-                        applicationInfo.packageName,
-                        PackageManager.GET_META_DATA
-                    ) ?: return@mapNotNull null
                     AppInfo(
                         applicationInfo = applicationInfo,
                         packageName = applicationInfo.packageName,
                         appName = appName,
                         appIcon = appIcon,
+                        sharedUserId = packageInfo.sharedUserId,
                         isSystemApp = isSystemApp(applicationInfo),
-                        isXposedModule = packageInfo.applicationInfo.isXposedModule()
+                        isXposedModule = applicationInfo.isXposedModule()
                     )
                 }
         }
@@ -162,16 +161,6 @@ object AppHelper {
         }
     }
 
-    fun AppInfo.getSharedUserId(context: Context): String? {
-        return packageName.getSharedUserId(context)
-    }
-
-    fun String.getSharedUserId(context: Context): String? {
-        val packageInfo =
-            getPackageInfo(context, this, PackageManager.MATCH_UNINSTALLED_PACKAGES)
-        return packageInfo?.sharedUserId
-    }
-
     fun ApplicationInfo.isXposedModule(): Boolean {
         return metaData?.getBoolean("xposedmodule") == true ||
                 metaData?.containsKey("xposedminversion") == true
@@ -234,6 +223,7 @@ object AppHelper {
             packageName = applicationInfo.packageName,
             appName = appName,
             appIcon = appIcon,
+            sharedUserId = packageInfo.sharedUserId,
             isSystemApp = isSystemApp(applicationInfo),
             isXposedModule = packageInfo.applicationInfo.isXposedModule()
         )

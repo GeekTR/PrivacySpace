@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.util.AppHelper
-import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
 import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.setDifferentValue
@@ -49,7 +48,7 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
     }
 
     fun addApp2Whitelist(appInfo: AppInfo) {
-        val targetSharedUserId = appInfo.getSharedUserId(context)
+        val targetSharedUserId = appInfo.sharedUserId
         if (!targetSharedUserId.isNullOrEmpty()) {
             sharedUserIdMap[appInfo.packageName] = targetSharedUserId
         }

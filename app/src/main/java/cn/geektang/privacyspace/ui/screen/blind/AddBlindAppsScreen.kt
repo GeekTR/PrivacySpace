@@ -36,7 +36,7 @@ fun AddBlindAppsScreen(viewModel: AddBlindAppsViewModel = viewModel()) {
     Column {
         val navController = LocalNavHostController.current
         SearchTopBar(
-            title = stringResource(R.string.add_hidden_apps),
+            title = stringResource(R.string.blind),
             searchText = searchText,
             onSearchTextChange = {
                 viewModel.updateSearchText(it)

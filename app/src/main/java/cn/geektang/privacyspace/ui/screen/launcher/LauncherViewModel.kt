@@ -2,6 +2,7 @@ package cn.geektang.privacyspace.ui.screen.launcher
 
 import android.app.Application
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -14,7 +15,6 @@ import cn.geektang.privacyspace.bean.ConfigData
 import cn.geektang.privacyspace.bean.SystemUserInfo
 import cn.geektang.privacyspace.util.AppHelper
 import cn.geektang.privacyspace.util.AppHelper.getPackageInfo
-import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
 import cn.geektang.privacyspace.util.AppHelper.isXposedModule
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.showToast
@@ -55,37 +55,40 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
     }
 
     private fun Set<String>.mapToAppInfoList(): List<AppInfo> {
-        val flag = PackageManager.MATCH_UNINSTALLED_PACKAGES
         return this.mapNotNull { packageName ->
             try {
-                context.packageManager.getApplicationInfo(
-                    packageName,
-                    flag
+                getPackageInfo(
+                    context = context,
+                    packageName = packageName,
+                    PackageManager.MATCH_UNINSTALLED_PACKAGES or PackageManager.GET_META_DATA
                 )
             } catch (e: Throwable) {
                 null
             }
         }
-            .sortedWith(ApplicationInfo.DisplayNameComparator(context.packageManager))
-            .mapNotNull { applicationInfo ->
+            .sortedWith(DisplayNameComparator(context.packageManager))
+            .map { packageInfo ->
+                val applicationInfo = packageInfo.applicationInfo
                 val appName = applicationInfo.loadLabel(context.packageManager).toString()
                 val appIcon = applicationInfo.loadIcon(context.packageManager)
-                val packageInfo = getPackageInfo(
-                    context,
-                    applicationInfo.packageName,
-                    PackageManager.GET_META_DATA
-                ) ?: return@mapNotNull null
-                val isXposedModule =
-                    packageInfo.applicationInfo.isXposedModule()
+                val isXposedModule = applicationInfo.isXposedModule()
                 AppInfo(
                     applicationInfo = applicationInfo,
                     packageName = applicationInfo.packageName,
                     appName = appName,
                     appIcon = appIcon,
+                    sharedUserId = packageInfo.sharedUserId,
                     isSystemApp = AppHelper.isSystemApp(applicationInfo),
                     isXposedModule = isXposedModule
                 )
             }
+    }
+
+    class DisplayNameComparator(packageManager: PackageManager) : Comparator<PackageInfo> {
+        private val innerComparator = ApplicationInfo.DisplayNameComparator(packageManager)
+        override fun compare(p0: PackageInfo, p1: PackageInfo): Int {
+            return innerComparator.compare(p0.applicationInfo, p1.applicationInfo)
+        }
     }
 
     fun cancelHide(appInfo: AppInfo) {
@@ -102,12 +105,12 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
         connectedAppsForSourceApp.add(targetApp)
         connectedApps[sourceApp.packageName] = connectedAppsForSourceApp
 
-        val sharedUserIdForSourceApp = sourceApp.getSharedUserId(context)
+        val sharedUserIdForSourceApp = sourceApp.sharedUserId
         if (!sharedUserIdForSourceApp.isNullOrEmpty()) {
             sharedUserIdMap[sourceApp.packageName] = sharedUserIdForSourceApp
         }
 
-        val sharedUserIdForTargetApp = sourceApp.getSharedUserId(context)
+        val sharedUserIdForTargetApp = sourceApp.sharedUserId
         if (!sharedUserIdForTargetApp.isNullOrEmpty()) {
             sharedUserIdMap[targetApp] = sharedUserIdForTargetApp
         }
