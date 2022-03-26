@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.Lifecycle
@@ -47,6 +46,7 @@ import cn.geektang.privacyspace.constant.RouteConstant
 import cn.geektang.privacyspace.constant.UiSettings
 import cn.geektang.privacyspace.constant.UiSettings.obtainCellContentPaddingRatio
 import cn.geektang.privacyspace.constant.UiSettings.obtainCellCount
+import cn.geektang.privacyspace.ui.widget.NoticeDialog
 import cn.geektang.privacyspace.ui.widget.PopupItem
 import cn.geektang.privacyspace.ui.widget.PopupMenu
 import cn.geektang.privacyspace.ui.widget.TopBar
@@ -54,7 +54,6 @@ import cn.geektang.privacyspace.util.*
 import cn.geektang.privacyspace.util.AppHelper.getLauncherPackageName
 import coil.compose.rememberImagePainter
 import kotlinx.coroutines.launch
-import kotlin.system.exitProcess
 
 @Composable
 fun LauncherScreen(
@@ -139,7 +138,13 @@ fun LauncherScreen(
         mutableStateOf(!context.sp.hasReadNotice)
     }
     if (isShowAlterDialog.value) {
-        NoticeDialog(isShowAlterDialog, context)
+        NoticeDialog(text = stringResource(id = R.string.launcher_notice),
+            onDismissRequest = {
+                isShowAlterDialog.value = false
+            }, onPositiveButtonClick = {
+                context.sp.hasReadNotice = true
+                isShowAlterDialog.value = false
+            })
     }
     val coroutineScope = rememberCoroutineScope()
     OnLifecycleEvent(onEvent = { event ->
@@ -152,48 +157,6 @@ fun LauncherScreen(
             }
         }
     })
-}
-
-@Composable
-private fun NoticeDialog(
-    isShowAlterDialog: MutableState<Boolean>,
-    context: Context
-) {
-    AlertDialog(onDismissRequest = { isShowAlterDialog.value = false },
-        properties = DialogProperties(
-            dismissOnBackPress = false,
-            dismissOnClickOutside = false
-        ),
-        buttons = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = {
-                    exitProcess(0)
-                }) {
-                    Text(
-                        text = stringResource(R.string.launcher_notice_cancel),
-                        color = MaterialTheme.colors.secondary
-                    )
-                }
-                TextButton(onClick = {
-                    isShowAlterDialog.value = false
-                    context.sp.hasReadNotice = true
-                }) {
-                    Text(
-                        text = stringResource(R.string.launcher_notice_confirm),
-                        color = MaterialTheme.colors.primary
-                    )
-                }
-            }
-        }, text = {
-            Text(text = stringResource(id = R.string.launcher_notice))
-        }, title = {
-            Text(text = stringResource(R.string.tips))
-        })
 }
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationApi::class)

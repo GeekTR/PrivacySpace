@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.util.AppHelper
+import cn.geektang.privacyspace.util.AppHelper.isMatch
 import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.setDifferentValue
@@ -79,8 +80,7 @@ class SetConnectedAppsViewModel(
         val searchTextLowercase = searchText.lowercase(Locale.getDefault())
         if (searchText.isNotEmpty()) {
             appList = appList.filter {
-                it.packageName.lowercase(Locale.getDefault()).contains(searchTextLowercase)
-                        || it.appName.lowercase(Locale.getDefault()).contains(searchTextLowercase)
+                it.isMatch(searchTextLowercase)
             }
         }
         if (showSystemAppsFlow.value) {

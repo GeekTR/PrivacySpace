@@ -63,7 +63,7 @@ fun AddHiddenAppsScreen(viewModel: AddHiddenAppsViewModel = viewModel()) {
     )
 
     val context = LocalContext.current
-    NoticeDialog(context)
+    NoticeDialogLocal(context)
 
     OnLifecycleEvent { event ->
         if (event == Lifecycle.Event.ON_PAUSE
@@ -76,15 +76,20 @@ fun AddHiddenAppsScreen(viewModel: AddHiddenAppsViewModel = viewModel()) {
 }
 
 @Composable
-private fun NoticeDialog(context: Context) {
+private fun NoticeDialogLocal(context: Context) {
     var isShowAlterDialog by remember {
         mutableStateOf(!context.sp.hasReadNotice2)
     }
     if (isShowAlterDialog) {
-        NoticeDialog(text = stringResource(R.string.tips_whitelist_magisk)) {
-            isShowAlterDialog = false
-            context.sp.hasReadNotice2 = true
-        }
+        NoticeDialog(
+            text = stringResource(R.string.tips_whitelist_magisk),
+            onPositiveButtonClick = {
+                isShowAlterDialog = false
+                context.sp.hasReadNotice2 = true
+            },
+            onDismissRequest = {
+                isShowAlterDialog = false
+            })
     }
 }
 

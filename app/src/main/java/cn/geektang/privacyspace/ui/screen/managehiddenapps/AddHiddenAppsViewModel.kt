@@ -7,6 +7,7 @@ import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.util.AppHelper
+import cn.geektang.privacyspace.util.AppHelper.isMatch
 import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.setDifferentValue
@@ -64,8 +65,7 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
         val searchTextLowercase = searchText.lowercase(Locale.getDefault())
         if (searchText.isNotEmpty()) {
             appList = appList.filter {
-                it.packageName.lowercase(Locale.getDefault()).contains(searchTextLowercase)
-                        || it.appName.lowercase(Locale.getDefault()).contains(searchTextLowercase)
+                it.isMatch(searchTextLowercase)
             }
         }
         if (isShowSystemAppsFlow.value) {

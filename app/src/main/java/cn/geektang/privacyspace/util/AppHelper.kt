@@ -16,6 +16,7 @@ import com.microsoft.appcenter.analytics.Analytics
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import java.util.*
 
 object AppHelper {
     private val _allApps = MutableStateFlow<List<AppInfo>>(emptyList())
@@ -208,6 +209,12 @@ object AppHelper {
             }
         }
         context.applicationContext.registerReceiver(receiver, packageFilter)
+    }
+
+    fun AppInfo.isMatch(searchTextLowercase: String): Boolean {
+        return packageName.lowercase(Locale.getDefault()).contains(searchTextLowercase)
+                || appName.lowercase(Locale.getDefault()).contains(searchTextLowercase)
+                || (sharedUserId?.lowercase(Locale.getDefault()) ?: "").contains(searchTextLowercase)
     }
 
     @Throws(PackageManager.NameNotFoundException::class)

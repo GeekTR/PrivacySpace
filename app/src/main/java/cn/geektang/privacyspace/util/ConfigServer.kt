@@ -67,7 +67,8 @@ class ConfigServer : XC_MethodHook() {
             "getInstallerPackageName" -> {
                 hookGetInstallerPackageName(param)
             }
-            else -> {}
+            else -> {
+            }
         }
     }
 

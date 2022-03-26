@@ -129,7 +129,7 @@ class HookMain : IXposedHookLoadPackage {
     }
 
     private fun loadConfigDataAndParse() {
-        val configDataNew = ConfigHelper.loadConfigWithSystemApp() ?: ConfigData.EMPTY
+        val configDataNew = ConfigHelper.loadConfigWithSystemApp(packageName ?: "") ?: ConfigData.EMPTY
         if (configDataNew != configData) {
             configData = configDataNew
             updateConfigData(configDataNew)

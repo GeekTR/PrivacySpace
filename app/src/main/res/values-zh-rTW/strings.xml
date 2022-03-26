@@ -45,4 +45,6 @@
     <string name="confirm">確定</string>
     <string name="tips_confirm_restart_system">您確定重啟系統嗎？</string>
     <string name="blind">致盲</string>
+    <string name="tips_cancel_blind">\'%s\'已被致盲，加入白名單後將取消致盲，您確認這樣操作嗎？</string>
+    <string name="tips_cancel_whitelist">\'%s\'已被加入白名單，致盲後將移出白名單，您確認這樣操作嗎？</string>
 </resources>

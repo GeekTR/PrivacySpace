@@ -19,8 +19,10 @@ object FrameworkHookerApi28Impl : XC_MethodHook(), Hooker {
     private lateinit var mSettingsField: Field
     private lateinit var getAppIdMethod: Method
     private lateinit var getSettingLPrMethod: Method
+    private lateinit var classLoader: ClassLoader
 
     override fun start(classLoader: ClassLoader) {
+        this.classLoader = classLoader
         try {
             pmsClass = HookUtil.loadPms(classLoader) ?: throw PackageManager.NameNotFoundException()
             mSettingsField = pmsClass.getDeclaredField("mSettings")
@@ -74,6 +76,7 @@ object FrameworkHookerApi28Impl : XC_MethodHook(), Hooker {
         for (resolveInfo in resultList) {
             val targetPackageName = (resolveInfo as? ResolveInfo)?.getPackageName() ?: continue
             val shouldIntercept = HookChecker.shouldIntercept(
+                classLoader,
                 userId,
                 targetPackageName,
                 callingPackageName
@@ -102,6 +105,7 @@ object FrameworkHookerApi28Impl : XC_MethodHook(), Hooker {
         val callingPackageName = getPackageName(param.thisObject, callingUid) ?: return
 
         val shouldIntercept = HookChecker.shouldIntercept(
+            classLoader,
             userId,
             targetPackageName,
             callingPackageName

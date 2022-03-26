@@ -37,10 +37,15 @@ fun AppInfoColumnItem(appInfo: AppInfo, isChecked: Boolean, onClick: () -> Unit)
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(horizontal = 15.dp)
+                .padding(horizontal = 10.dp)
         ) {
-            Text(text = appInfo.appName, style = MaterialTheme.typography.subtitle1)
-            Text(text = appInfo.packageName, style = MaterialTheme.typography.body2)
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 5.dp)
+            ) {
+                Text(text = appInfo.appName, style = MaterialTheme.typography.subtitle1)
+                Text(text = appInfo.packageName, style = MaterialTheme.typography.body2)
+            }
             val chipTexts = mutableListOf<String>()
             if (appInfo.isSystemApp) {
                 chipTexts.add("SystemApp")
@@ -52,12 +57,12 @@ fun AppInfoColumnItem(appInfo: AppInfo, isChecked: Boolean, onClick: () -> Unit)
                 chipTexts.add(appInfo.sharedUserId)
             }
             if (chipTexts.isNotEmpty()) {
-                FlowRow {
-                    for ((index, chipText) in chipTexts.withIndex()) {
-                        if (index != 0) {
-                            Spacer(modifier = Modifier.padding(start = 10.dp))
-                        }
-                        Chip(modifier = Modifier.padding(top = 5.dp), text = chipText)
+                FlowRow(modifier = Modifier.fillMaxWidth().padding(all = 2.5.dp)) {
+                    for (chipText in chipTexts) {
+                        Chip(
+                            modifier = Modifier.padding(all = 2.5.dp),
+                            text = chipText
+                        )
                     }
                 }
             }

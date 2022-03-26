@@ -7,7 +7,10 @@ import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedHelpers
 
 object FrameworkHookerApi30Impl : XC_MethodHook(), Hooker {
+    private lateinit var classLoader: ClassLoader
+
     override fun start(classLoader: ClassLoader) {
+        this.classLoader = classLoader
         val appsFilerClass: Class<*>
         val settingBaseClass: Class<*>
         val packageSettingClass: Class<*>
@@ -40,6 +43,7 @@ object FrameworkHookerApi30Impl : XC_MethodHook(), Hooker {
         val callingPackageName = param.args[1]?.packageName ?: return
         val userId = param.args[3] as Int
         val shouldIntercept = HookChecker.shouldIntercept(
+            classLoader = classLoader,
             targetPackageName = targetPackageName,
             callingPackageName = callingPackageName,
             userId = userId
