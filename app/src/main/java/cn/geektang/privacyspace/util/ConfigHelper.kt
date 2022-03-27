@@ -187,6 +187,10 @@ object ConfigHelper {
         configClient.rebootTheSystem()
     }
 
+    fun forceStop(packageName: String): Boolean {
+        return configClient.forceStop(packageName)
+    }
+
     suspend fun queryAllUsers(): List<SystemUserInfo>? {
         return configClient.querySystemUserList()
     }

@@ -47,6 +47,10 @@ class ConfigClient(context: Context) {
         }
     }
 
+    fun forceStop(packageName: String): Boolean {
+        return connectServer("${ConfigServer.FORCE_STOP}$packageName") == ConfigServer.EXEC_SUCCEED
+    }
+
     suspend fun querySystemUserList(): List<SystemUserInfo>? {
         return withContext(Dispatchers.IO) {
             val userListJson = connectServer(ConfigServer.GET_USERS)

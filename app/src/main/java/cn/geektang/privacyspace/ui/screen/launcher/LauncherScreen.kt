@@ -53,6 +53,7 @@ import cn.geektang.privacyspace.ui.widget.TopBar
 import cn.geektang.privacyspace.util.*
 import cn.geektang.privacyspace.util.AppHelper.getLauncherPackageName
 import coil.compose.rememberImagePainter
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Composable
@@ -333,8 +334,8 @@ private fun AppItemPopupMenu(
                     })
                     if (isShowDesktopMenu) {
                         val text =
-                            if (isHideToDesktop) stringResource(R.string.disconnect_with_desktop) else stringResource(
-                                R.string.connect_with_desktop
+                            if (isHideToDesktop) stringResource(R.string.disconnect_with_launcher) else stringResource(
+                                R.string.connect_with_launcher
                             )
                         PopupItem(text = text, onClick = {
                             if (isHideToDesktop) {
@@ -425,14 +426,15 @@ private fun PopupMenuContent(
             scope.launch {
                 syncConfig()
                 val isSucceed =
-                    Su.exec("am force-stop ${context.getLauncherPackageName() ?: "com.miui.home"}")
+                    ConfigHelper.forceStop(context.getLauncherPackageName() ?: "com.miui.home")
                 if (isSucceed) {
-                    context.showToast(context.getString(R.string.desktop_restart_successfully))
+                    context.showToast(context.getString(R.string.launcher_restart_successfully))
                 } else {
-                    context.showToast(context.getString(R.string.desktop_restart_failed))
+                    context.showToast(context.getString(R.string.launcher_restart_failed))
                 }
             }
         }
+        RestartSecurityPopupItem(isPopupMenuShow, scope, syncConfig, context)
         RestartSystemPopupItem(loadStatus, context, isPopupMenuShow)
         PopupItem(text = stringResource(R.string.screen_layout)) {
             if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
@@ -466,6 +468,33 @@ private fun PopupMenuContent(
             } catch (ignored: Throwable) {
             }
         })
+    }
+}
+
+@Composable
+private fun RestartSecurityPopupItem(
+    isPopupMenuShow: MutableState<Boolean>,
+    scope: CoroutineScope,
+    syncConfig: suspend () -> Unit,
+    context: Context
+) {
+    val isSecurityInstalled by remember {
+        mutableStateOf(AppHelper.getPackageInfo(context, "com.miui.securitycenter") != null)
+    }
+    if (isSecurityInstalled) {
+        PopupItem(text = stringResource(R.string.restart_security)) {
+            isPopupMenuShow.value = false
+            scope.launch {
+                syncConfig()
+                val isSucceed =
+                    ConfigHelper.forceStop("com.miui.securitycenter")
+                if (isSucceed) {
+                    context.showToast(context.getString(R.string.security_restart_successfully))
+                } else {
+                    context.showToast(context.getString(R.string.security_restart_failed))
+                }
+            }
+        }
     }
 }
 

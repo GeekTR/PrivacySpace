@@ -1,8 +1,10 @@
 package cn.geektang.privacyspace.hook.impl
 
 import android.app.ActivityManager
+import android.content.Context
 import android.content.pm.*
 import android.os.Build
+import android.view.View
 import cn.geektang.privacyspace.hook.HookMain
 import cn.geektang.privacyspace.hook.Hooker
 import cn.geektang.privacyspace.util.ConfigHelper.getPackageName
@@ -85,18 +87,30 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
             this
         )
 
-        val clazz = classLoader.loadClassSafe("com.miui.dock.edit.DockAppEditActivity") ?: return
-        for (method in clazz.declaredMethods) {
-            if (method.parameterCount == 1 && method.parameterTypes.first() == PackageInfo::class.java) {
-                XposedBridge.hookMethod(method, object : XC_MethodHook() {
-                    override fun beforeHookedMethod(param: MethodHookParam) {
-                        val shouldFilterAppList = HookMain.hiddenAppList
-                        val packageInfo = param.args.first() as PackageInfo
-                        if (shouldFilterAppList.contains(packageInfo.packageName)) {
-                            param.result = Unit
+        val miuiRvClass = classLoader.loadClassSafe("miuix.recyclerview.widget.RecyclerView")
+        if (miuiRvClass != null) {
+            XposedHelpers.findAndHookConstructor(
+                miuiRvClass,
+                Context::class.java,
+                GameBoosterHooker(miuiRvClass)
+            )
+        }
+
+        val dockAppEditActivityClass =
+            classLoader.loadClassSafe("com.miui.dock.edit.DockAppEditActivity")
+        if (null != dockAppEditActivityClass) {
+            for (method in dockAppEditActivityClass.declaredMethods) {
+                if (method.parameterCount == 1 && method.parameterTypes.first() == PackageInfo::class.java) {
+                    XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                        override fun beforeHookedMethod(param: MethodHookParam) {
+                            val shouldFilterAppList = HookMain.hiddenAppList
+                            val packageInfo = param.args.first() as PackageInfo
+                            if (shouldFilterAppList.contains(packageInfo.packageName)) {
+                                param.result = Unit
+                            }
                         }
-                    }
-                })
+                    })
+                }
             }
         }
     }
@@ -188,16 +202,80 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
 //                var view = param.args.first() as View?
 //                XLog.d("onClick ${view?.context}")
 //                do {
-////                    XLog.d("onClick $view")
+//                    XLog.d("onClick $view")
 //                    view = view?.parent as? View
 //                } while (view != null)
-//
-////                for (stackTraceElement in Thread.currentThread().stackTrace) {
-////                    XLog.d(stackTraceElement.toString())
-////                }
-////                XLog.d("onClick end ***********")
 //            }
             else -> {}
+        }
+    }
+
+    private class GameBoosterHooker(private val miuiRvClass: Class<*>) : XC_MethodHook() {
+        private val hookCache = mutableSetOf<Class<*>>()
+        private var list: MutableList<*>? = null
+
+        override fun afterHookedMethod(param: MethodHookParam) {
+            val thisClass = param.thisObject.javaClass
+            if (thisClass.isAssignableFrom(miuiRvClass)) {
+                if (hookCache.contains(thisClass) || !thisClass.name.startsWith("com.miui.gamebooster.windowmanager.")) {
+                    return
+                }
+                hookCache.add(thisClass)
+                for (method in thisClass.declaredMethods) {
+                    if (method.name != "setDockType"
+                        && method.parameterCount == 1
+                        && method.parameterTypes.first() == Int::class.javaPrimitiveType
+                    ) {
+                        XposedBridge.hookMethod(method, this)
+                    }
+                }
+            } else {
+                if (list == null) {
+                    queryAndGetList(thisClass, param)
+                }
+                val listObj = list ?: return
+                val iterator = listObj.iterator()
+                val shouldFilterAppList = HookMain.hiddenAppList
+                while (iterator.hasNext()) {
+                    val appInfo = iterator.next() ?: continue
+                    val appInfoClass = appInfo.javaClass
+
+                    val shouldFilter = shouldFilter(appInfoClass, appInfo, shouldFilterAppList)
+                    if (shouldFilter) {
+                        iterator.remove()
+                    }
+                }
+            }
+        }
+
+        private fun shouldFilter(
+            appInfoClass: Class<Any>,
+            appInfo: Any,
+            shouldFilterAppList: Set<String>,
+        ): Boolean {
+            for (declaredField in appInfoClass.declaredFields) {
+                declaredField.isAccessible = true
+                val packageName = declaredField.get(appInfo)?.getPackageName() ?: continue
+                if (packageName.isNotBlank() && shouldFilterAppList.contains(packageName)) {
+                    return true
+                }
+            }
+            return false
+        }
+
+        private fun queryAndGetList(thisClass: Class<Any>, param: MethodHookParam) {
+            for (declaredField in thisClass.declaredFields) {
+                declaredField.isAccessible = true
+                list =
+                    declaredField.get(param.thisObject) as? MutableList<*>
+                        ?: continue
+                break
+            }
+        }
+
+        private fun Any?.getPackageName(): String? {
+            return toString().split(",").getOrNull(1)
+                ?.substringAfter("'")?.substringBefore("'")
         }
     }
 }

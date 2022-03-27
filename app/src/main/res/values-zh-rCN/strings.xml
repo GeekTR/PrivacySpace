@@ -28,15 +28,15 @@
     <string name="back">返回</string>
     <string name="search">搜索...</string>
     <string name="clear">清空</string>
-    <string name="desktop_restart_successfully">桌面重启成功!</string>
-    <string name="desktop_restart_failed">桌面重启失败...</string>
+    <string name="launcher_restart_successfully">桌面重启成功!</string>
+    <string name="launcher_restart_failed">桌面重启失败...</string>
     <string name="tips_whitelist_magisk">不要忘记将Magisk加入白名单 (如果开启了Magisk随机包名功能的话)</string>
     <string name="screen_layout">调整布局</string>
     <string name="icon_size">图标大小</string>
     <string name="icon_size_per_line">每行%d个</string>
     <string name="tips_get_apps_failed">获取App列表失败,请授予获取应用列表权限</string>
-    <string name="connect_with_desktop">与桌面关联</string>
-    <string name="disconnect_with_desktop">取消关联桌面</string>
+    <string name="connect_with_launcher">与桌面关联</string>
+    <string name="disconnect_with_launcher">取消关联桌面</string>
     <string name="checked_means_needs_to_be_hidden">勾选则代表需要对其隐藏</string>
     <string name="multi_users_settings">多用户配置</string>
     <string name="configuration_takes_effect_after_restarting_the_phone_system">此配置需要重启手机系统生效</string>
@@ -47,4 +47,7 @@
     <string name="blind">致盲</string>
     <string name="tips_cancel_blind">\'%s\'已被致盲，加入白名单后将取消致盲，您确认这样操作吗？</string>
     <string name="tips_cancel_whitelist">\'%s\'已被加入白名单，致盲后将移出白名单，您确认这样操作吗？</string>
+    <string name="restart_security">重启手机管家</string>
+    <string name="security_restart_successfully">手机管家重启成功!</string>
+    <string name="security_restart_failed">手机管家重启失败…</string>
 </resources>
