@@ -1,14 +1,19 @@
 package cn.geektang.privacyspace.hook.impl
 
+import android.app.ActivityManager
 import android.content.pm.*
 import android.os.Build
 import cn.geektang.privacyspace.hook.HookMain
 import cn.geektang.privacyspace.hook.Hooker
 import cn.geektang.privacyspace.util.ConfigHelper.getPackageName
 import cn.geektang.privacyspace.util.XLog
+import cn.geektang.privacyspace.util.loadClassSafe
 import cn.geektang.privacyspace.util.tryLoadClass
+import com.android.internal.os.BatterySipper
+import com.android.internal.os.BatteryStatsHelper
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
+import de.robv.android.xposed.XposedHelpers
 
 object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
     override fun start(classLoader: ClassLoader) {
@@ -42,26 +47,58 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
             }
         }
 
-        //TODO More testing is needed here
 //        XposedHelpers.findAndHookMethod(
-//            ActivityManager::class.java,
-//            "getRunningAppProcesses",
+//            View::class.java,
+//            "setOnClickListener",
+//            View.OnClickListener::class.java,
 //            object : XC_MethodHook() {
+//                private val cache = mutableSetOf<Class<*>>()
+//
 //                override fun afterHookedMethod(param: MethodHookParam) {
-//                    val result = param.result as? List<*> ?: return
-//                    val shouldFilterAppList = HookMain.hiddenAppList
-//                    param.result = result.filter {
-//                        it as ActivityManager.RunningAppProcessInfo
-//                        var shouldFilter = false
-//                        it.pkgList.forEach {
-//                            if (shouldFilterAppList.contains(it)) {
-//                                shouldFilter = true
-//                            }
-//                        }
-//                        !shouldFilter
+//                    val listener = param.args.first()
+//                    val clazz = listener.javaClass
+//                    if (!cache.contains(clazz)) {
+//                        cache.add(clazz)
+//                        val method =
+//                            listener.javaClass.getDeclaredMethod("onClick", View::class.java)
+//                        method.isAccessible = true
+//                        XposedBridge.hookMethod(method, this@SpecialAppsHookerImpl)
 //                    }
 //                }
-//            })
+//            }
+//        )
+
+        XposedHelpers.findAndHookMethod(
+            BatteryStatsHelper::class.java,
+            "getUsageList",
+            this
+        )
+        XposedHelpers.findAndHookMethod(
+            BatteryStatsHelper::class.java,
+            "getMobilemsppList",
+            this
+        )
+
+        XposedHelpers.findAndHookMethod(
+            ActivityManager::class.java,
+            "getRunningAppProcesses",
+            this
+        )
+
+        val clazz = classLoader.loadClassSafe("com.miui.dock.edit.DockAppEditActivity") ?: return
+        for (method in clazz.declaredMethods) {
+            if (method.parameterCount == 1 && method.parameterTypes.first() == PackageInfo::class.java) {
+                XposedBridge.hookMethod(method, object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val shouldFilterAppList = HookMain.hiddenAppList
+                        val packageInfo = param.args.first() as PackageInfo
+                        if (shouldFilterAppList.contains(packageInfo.packageName)) {
+                            param.result = Unit
+                        }
+                    }
+                })
+            }
+        }
     }
 
     override fun afterHookedMethod(param: MethodHookParam) {
@@ -117,6 +154,49 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
                     param.throwable = PackageManager.NameNotFoundException()
                 }
             }
+            "getUsageList", "getMobilemsppList" -> {
+                val result = param.result as? MutableList<*> ?: return
+                val iterator = result.iterator()
+                while (iterator.hasNext()) {
+                    val batterySipper = (iterator.next() as? BatterySipper) ?: continue
+                    val packages = batterySipper.packages
+                    if (packages.isNullOrEmpty()) {
+                        continue
+                    }
+                    for (packageName in packages) {
+                        if (shouldFilterAppList.contains(packageName)) {
+                            iterator.remove()
+                            break
+                        }
+                    }
+                }
+            }
+            "getRunningAppProcesses" -> {
+                val result = param.result as? List<*> ?: return
+                param.result = result.filter {
+                    it as ActivityManager.RunningAppProcessInfo
+                    var shouldFilter = false
+                    it.pkgList.forEach {
+                        if (shouldFilterAppList.contains(it)) {
+                            shouldFilter = true
+                        }
+                    }
+                    !shouldFilter
+                }
+            }
+//            "onClick" -> {
+//                var view = param.args.first() as View?
+//                XLog.d("onClick ${view?.context}")
+//                do {
+////                    XLog.d("onClick $view")
+//                    view = view?.parent as? View
+//                } while (view != null)
+//
+////                for (stackTraceElement in Thread.currentThread().stackTrace) {
+////                    XLog.d(stackTraceElement.toString())
+////                }
+////                XLog.d("onClick end ***********")
+//            }
             else -> {}
         }
     }
