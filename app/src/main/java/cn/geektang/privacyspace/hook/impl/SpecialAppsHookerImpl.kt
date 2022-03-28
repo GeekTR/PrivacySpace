@@ -4,7 +4,6 @@ import android.app.ActivityManager
 import android.content.Context
 import android.content.pm.*
 import android.os.Build
-import android.view.View
 import cn.geektang.privacyspace.hook.HookMain
 import cn.geektang.privacyspace.hook.Hooker
 import cn.geektang.privacyspace.util.ConfigHelper.getPackageName
@@ -16,6 +15,7 @@ import com.android.internal.os.BatteryStatsHelper
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
+import java.lang.reflect.Constructor
 
 object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
     override fun start(classLoader: ClassLoader) {
@@ -92,7 +92,7 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
             XposedHelpers.findAndHookConstructor(
                 miuiRvClass,
                 Context::class.java,
-                GameBoosterHooker(miuiRvClass)
+                GameBoosterHooker()
             )
         }
 
@@ -210,13 +210,13 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
         }
     }
 
-    private class GameBoosterHooker(private val miuiRvClass: Class<*>) : XC_MethodHook() {
+    private class GameBoosterHooker() : XC_MethodHook() {
         private val hookCache = mutableSetOf<Class<*>>()
         private var list: MutableList<*>? = null
 
         override fun afterHookedMethod(param: MethodHookParam) {
             val thisClass = param.thisObject.javaClass
-            if (thisClass.isAssignableFrom(miuiRvClass)) {
+            if (param.method is Constructor<*>) {
                 if (hookCache.contains(thisClass) || !thisClass.name.startsWith("com.miui.gamebooster.windowmanager.")) {
                     return
                 }
@@ -266,8 +266,8 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
         private fun queryAndGetList(thisClass: Class<Any>, param: MethodHookParam) {
             for (declaredField in thisClass.declaredFields) {
                 declaredField.isAccessible = true
-                list =
-                    declaredField.get(param.thisObject) as? MutableList<*>
+                val value = declaredField.get(param.thisObject)
+                list = value as? MutableList<*>
                         ?: continue
                 break
             }
