@@ -24,14 +24,21 @@ class AddBlindAppsViewModel(private val context: Application) : AndroidViewModel
     val isShowSystemAppsFlow = MutableStateFlow(false)
     val searchTextFlow = MutableStateFlow("")
     private var isModified = false
+    private val connectedAppsCache = mutableMapOf<String, Set<String>>()
+    private val hiddenAppList = mutableSetOf<String>()
 
     init {
         viewModelScope.launch {
             launch {
                 ConfigHelper.configDataFlow.collect {
                     whitelistFlow.value = it.whitelist.toSet()
-
                     blindAppsListFlow.value = it.blind?.toSet() ?: emptySet()
+
+                    connectedAppsCache.clear()
+                    connectedAppsCache.putAll(it.connectedApps)
+
+                    hiddenAppList.clear()
+                    hiddenAppList.addAll(it.hiddenAppList)
                 }
             }
             launch {
@@ -80,6 +87,9 @@ class AddBlindAppsViewModel(private val context: Application) : AndroidViewModel
         val newAppsList = blindAppsListFlow.value.toMutableSet()
         newAppsList.remove(appInfo.packageName)
         blindAppsListFlow.value = newAppsList
+        if (!hiddenAppList.contains(appInfo.packageName)) {
+            connectedAppsCache.remove(appInfo.packageName)
+        }
         isModified = true
     }
 
@@ -102,7 +112,8 @@ class AddBlindAppsViewModel(private val context: Application) : AndroidViewModel
 
             ConfigHelper.updateBlindApps(
                 whitelistNew = whitelist,
-                blindAppsListNew = blindAppsList
+                blindAppsListNew = blindAppsList,
+                connectedAppsNew = connectedAppsCache
             )
             isModified = false
         }

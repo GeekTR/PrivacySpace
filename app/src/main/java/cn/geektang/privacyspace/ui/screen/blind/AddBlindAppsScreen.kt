@@ -1,27 +1,26 @@
 package cn.geektang.privacyspace.ui.screen.blind
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.AlertDialog
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.material.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cn.geektang.privacyspace.R
 import cn.geektang.privacyspace.bean.AppInfo
+import cn.geektang.privacyspace.constant.RouteConstant
 import cn.geektang.privacyspace.ui.widget.*
 import cn.geektang.privacyspace.util.LocalNavHostController
 import cn.geektang.privacyspace.util.OnLifecycleEvent
-import cn.geektang.privacyspace.util.hasReadNotice
-import cn.geektang.privacyspace.util.sp
 import com.google.accompanist.insets.navigationBarsPadding
-import kotlin.system.exitProcess
 
 @Composable
 fun AddBlindAppsScreen(viewModel: AddBlindAppsViewModel = viewModel()) {
@@ -81,29 +80,51 @@ private fun AppItem(
     blindApps: Set<String>,
     appInfo: AppInfo,
     whitelistApps: Set<String>,
-    viewModel: AddBlindAppsViewModel
+    actions: AddBlindAppsActions
 ) {
     var showConfirmDialog by remember {
         mutableStateOf(false)
     }
     val isChecked = blindApps.contains(appInfo.packageName)
-    AppInfoColumnItem(appInfo, isChecked, onClick = {
-        if (!blindApps.contains(appInfo.packageName)) {
-            if (whitelistApps.contains(appInfo.packageName)) {
-                showConfirmDialog = true
+    Column {
+        val customButtons = remember(isChecked) {
+            if (isChecked) {
+                val setConnectedAppsButton: (@Composable () -> Unit) = {
+                    val navController = LocalNavHostController.current
+                    Chip(
+                        modifier = Modifier
+                            .padding(all = 2.5.dp)
+                            .clip(RoundedCornerShape(percent = 50))
+                            .clickable {
+                                navController.navigate("${RouteConstant.SET_CONNECTED_APPS}?targetPackageName=${appInfo.packageName}")
+                            },
+                        color = MaterialTheme.colors.primary,
+                        text = stringResource(R.string.click_to_set_connected_apps)
+                    )
+                }
+                listOf(setConnectedAppsButton)
             } else {
-                viewModel.addApp2BlindList(appInfo)
+                emptyList()
             }
-        } else {
-            viewModel.removeApp2BlindList(appInfo)
         }
-    })
+        AppInfoColumnItem(appInfo, isChecked, customButtons, onClick = {
+            if (!blindApps.contains(appInfo.packageName)) {
+                if (whitelistApps.contains(appInfo.packageName)) {
+                    showConfirmDialog = true
+                } else {
+                    actions.addApp2BlindList(appInfo)
+                }
+            } else {
+                actions.removeApp2BlindList(appInfo)
+            }
+        })
+    }
     if (showConfirmDialog) {
         MessageDialog(
             text = {
                 Text(text = stringResource(id = R.string.tips_cancel_whitelist, appInfo.appName))
             }, onPositiveButtonClick = {
-                viewModel.addApp2BlindList(appInfo)
+                actions.addApp2BlindList(appInfo)
                 showConfirmDialog = false
             }, onDismissRequest = { showConfirmDialog = false }
         )

@@ -58,6 +58,8 @@ object HookChecker {
         if (defaultBlindWhitelist.isNotEmpty()
             && !defaultBlindWhitelist.contains(targetPackageName)
             && blindApps.contains(callingPackageName)
+            && connectedAppsInfoMap[callingPackageName]?.contains(targetPackageName) != true
+            && connectedAppsInfoMap[targetPackageName]?.contains(callingPackageName) != true
         ) {
             XLog.i("$callingPackageName was prevented from reading ${targetPackageName}.")
             return true

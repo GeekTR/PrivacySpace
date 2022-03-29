@@ -50,4 +50,5 @@
     <string name="restart_security">重啟手機管家</string>
     <string name="security_restart_successfully">手機管家重啟成功!</string>
     <string name="security_restart_failed">手機管家重啟成功…</string>
+    <string name="click_to_set_connected_apps">點我設定關聯應用</string>
 </resources>

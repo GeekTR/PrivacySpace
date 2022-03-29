@@ -21,7 +21,12 @@ import coil.compose.rememberImagePainter
 import com.google.accompanist.flowlayout.FlowRow
 
 @Composable
-fun AppInfoColumnItem(appInfo: AppInfo, isChecked: Boolean, onClick: () -> Unit) {
+fun AppInfoColumnItem(
+    appInfo: AppInfo,
+    isChecked: Boolean,
+    customButtons: List<(@Composable () -> Unit)> = emptyList(),
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .clickable(onClick = onClick)
@@ -56,8 +61,17 @@ fun AppInfoColumnItem(appInfo: AppInfo, isChecked: Boolean, onClick: () -> Unit)
             if (!appInfo.sharedUserId.isNullOrEmpty()) {
                 chipTexts.add(appInfo.sharedUserId)
             }
-            if (chipTexts.isNotEmpty()) {
-                FlowRow(modifier = Modifier.fillMaxWidth().padding(all = 2.5.dp)) {
+            val showSetConnectButton = customButtons.isNotEmpty()
+            if (chipTexts.isNotEmpty() || showSetConnectButton) {
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(all = 2.5.dp)
+                ) {
+                    for (customButton in customButtons) {
+                        customButton()
+                    }
+
                     for (chipText in chipTexts) {
                         Chip(
                             modifier = Modifier.padding(all = 2.5.dp),

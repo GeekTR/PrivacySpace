@@ -12,11 +12,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun Chip(modifier: Modifier = Modifier, text: String) {
+fun Chip(
+    modifier: Modifier = Modifier,
+    text: String,
+    color: Color = MaterialTheme.colors.secondary
+) {
     Text(
         modifier = modifier
             .background(
-                color = MaterialTheme.colors.secondary,
+                color = color,
                 shape = RoundedCornerShape(50)
             )
             .padding(horizontal = 10.dp, vertical = 5.dp),

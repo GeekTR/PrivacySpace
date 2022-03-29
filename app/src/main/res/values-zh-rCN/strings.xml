@@ -50,4 +50,5 @@
     <string name="restart_security">重启手机管家</string>
     <string name="security_restart_successfully">手机管家重启成功!</string>
     <string name="security_restart_failed">手机管家重启失败…</string>
+    <string name="click_to_set_connected_apps">点我设置关联应用</string>
 </resources>

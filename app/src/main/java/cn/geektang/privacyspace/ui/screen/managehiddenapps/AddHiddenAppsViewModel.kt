@@ -26,6 +26,7 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
     private var isModified = false
     private val connectedAppsCache = mutableMapOf<String, Set<String>>()
     private val sharedUserIdMap = mutableMapOf<String, String>()
+    private val blindApps = mutableSetOf<String>()
 
     init {
         viewModelScope.launch {
@@ -42,6 +43,9 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
 
                     multiUserConfig.clear()
                     multiUserConfig.putAll(it.multiUserConfig ?: emptyMap())
+
+                    blindApps.clear()
+                    blindApps.addAll(it.blind ?: emptyList())
                 }
             }
             launch {
@@ -108,7 +112,9 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
         val hiddenAppList = hiddenAppListFlow.value.toMutableSet()
         hiddenAppList.remove(appInfo.packageName)
         hiddenAppListFlow.value = hiddenAppList
-        connectedAppsCache.remove(appInfo.packageName)
+        if (!blindApps.contains(appInfo.packageName)) {
+            connectedAppsCache.remove(appInfo.packageName)
+        }
         multiUserConfig.remove(appInfo.packageName)
         isModified = true
     }

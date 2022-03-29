@@ -27,8 +27,9 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
     val systemUsers = mutableStateListOf<SystemUserInfo>()
     val multiUserConfig = mutableStateMapOf<String, Set<Int>>()
     private val sharedUserIdMap = mutableMapOf<String, String>()
-    private val connectedApps = mutableMapOf<String, Set<String>>()
+    val connectedApps = mutableMapOf<String, Set<String>>()
     private var needSync = false
+    private val blindApps = mutableSetOf<String>()
 
     init {
         ConfigHelper.initConfig(context)
@@ -50,6 +51,9 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
 
                 multiUserConfig.clear()
                 multiUserConfig.putAll(it.multiUserConfig ?: emptyMap())
+
+                blindApps.clear()
+                blindApps.addAll(it.blind ?: emptySet())
             }
         }
     }
@@ -95,6 +99,9 @@ class LauncherViewModel(private val context: Application) : AndroidViewModel(con
         val hasChange = this.hiddenAppList.removeIf { it.packageName == appInfo.packageName }
         if (hasChange) {
             multiUserConfig.remove(appInfo.packageName)
+            if (!blindApps.contains(appInfo.packageName)) {
+                connectedApps.remove(appInfo.packageName)
+            }
         }
         needSync = needSync or hasChange
     }

@@ -142,10 +142,15 @@ object ConfigHelper {
         }
     }
 
-    fun updateBlindApps(whitelistNew: Set<String>, blindAppsListNew: Set<String>) {
+    fun updateBlindApps(
+        whitelistNew: Set<String>,
+        blindAppsListNew: Set<String>,
+        connectedAppsNew : Map<String, Set<String>>
+    ) {
         val newConfigData = configDataFlow.value.copy(
             whitelist = whitelistNew.toSet(),
-            blind = blindAppsListNew.toSet()
+            blind = blindAppsListNew.toSet(),
+            connectedApps = connectedAppsNew.toMap()
         )
         configDataFlow.value = newConfigData
         scope.launch {

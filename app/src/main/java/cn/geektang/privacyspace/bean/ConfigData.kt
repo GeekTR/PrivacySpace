@@ -13,7 +13,7 @@ data class ConfigData(
     val connectedApps: Map<String, Set<String>>,
     val sharedUserIdMap: Map<String, String>?,
     val multiUserConfig: Map<String, Set<Int>>?,
-    val blind: Set<String>?
+    val blind: Set<String>?,
 ) {
     companion object {
         val EMPTY = ConfigData(

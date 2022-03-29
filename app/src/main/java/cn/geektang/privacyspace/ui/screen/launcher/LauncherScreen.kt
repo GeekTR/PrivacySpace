@@ -64,6 +64,7 @@ fun LauncherScreen(
     val systemUsers = viewModel.systemUsers
     val multiUserConfig = viewModel.multiUserConfig
     val configData by viewModel.configData
+    val connectedApps = viewModel.connectedApps
     val loadStatus by ConfigHelper.loadingStatusFlow.collectAsState()
     val context = LocalContext.current
     val isShowMultiUserConfigSettingsDialog = remember {
@@ -114,6 +115,7 @@ fun LauncherScreen(
         appList = appList,
         systemUsers = systemUsers,
         configData = configData,
+        connectedApps = connectedApps,
         cellCount = cellCount.value,
         cellContentPaddingRatio = cellContentPaddingRatio.value,
         loadStatus = loadStatus,
@@ -166,6 +168,7 @@ private fun LauncherScreenContent(
     appList: List<AppInfo>,
     systemUsers: List<SystemUserInfo>,
     configData: ConfigData,
+    connectedApps: Map<String, Set<String>>,
     cellCount: Int,
     cellContentPaddingRatio: Float,
     loadStatus: Int,
@@ -186,6 +189,9 @@ private fun LauncherScreenContent(
     val isShowPopupMenu = remember {
         mutableStateOf(false)
     }
+    val dismissPopupMenu = {
+        isShowPopupMenu.value = false
+    }
     val actionsWrapper = object : LauncherActions {
         override fun showAppItemMenu(appInfo: AppInfo, offset: Offset) {
             popupMenuAppInfo = appInfo
@@ -195,32 +201,33 @@ private fun LauncherScreenContent(
 
         override fun uninstall(appInfo: AppInfo) {
             actions.uninstall(appInfo)
-            isShowPopupMenu.value = false
+            dismissPopupMenu()
         }
 
         override fun cancelHide(appInfo: AppInfo) {
             actions.cancelHide(appInfo)
-            isShowPopupMenu.value = false
+            dismissPopupMenu()
         }
 
         override fun connectTo(sourceApp: AppInfo, targetApp: String) {
             actions.connectTo(sourceApp, targetApp)
-            isShowPopupMenu.value = false
+            dismissPopupMenu()
         }
 
         override fun disconnectTo(sourceApp: AppInfo, targetApp: String) {
             actions.disconnectTo(sourceApp, targetApp)
-            isShowPopupMenu.value = false
+            dismissPopupMenu()
         }
 
         override fun onMultiUserConfigSettingsItemClick(appInfo: AppInfo) {
             actions.onMultiUserConfigSettingsItemClick(appInfo)
-            isShowPopupMenu.value = false
+            dismissPopupMenu()
         }
     }
 
     AppItemPopupMenu(
         configData = configData,
+        connectedApps = connectedApps,
         systemUsers = systemUsers,
         popupMenuAppInfo = popupMenuAppInfo,
         popupMenuOffset = popupMenuOffset,
@@ -293,6 +300,7 @@ private fun LauncherScreenContent(
 @Composable
 private fun AppItemPopupMenu(
     configData: ConfigData,
+    connectedApps: Map<String, Set<String>>,
     systemUsers: List<SystemUserInfo>,
     popupMenuAppInfo: AppInfo?,
     popupMenuOffset: Offset?,
@@ -318,7 +326,7 @@ private fun AppItemPopupMenu(
                 }
                 val isShowDesktopMenu = !configData.whitelist.contains(launcherPackageName)
                 val isHideToDesktop =
-                    configData.connectedApps[popupMenuAppInfo?.packageName ?: ""]?.contains(
+                    connectedApps[popupMenuAppInfo?.packageName ?: ""]?.contains(
                         launcherPackageName
                     ) == true
                 Column(
@@ -660,6 +668,7 @@ fun LauncherScreenPreview() {
         appList = listOf(appInfo, appInfo, appInfo, appInfo, appInfo, appInfo),
         systemUsers = emptyList(),
         configData = ConfigData.EMPTY,
+        connectedApps = emptyMap(),
         cellCount = 4,
         cellContentPaddingRatio = 0.5f,
         ConfigHelper.LOADING_STATUS_SUCCESSFUL,

@@ -38,13 +38,18 @@ class SetConnectedAppsViewModel(
             launch {
                 withContext(Dispatchers.IO) {
                     if (null != targetPackageName) {
-                        val applicationInfo = context.packageManager.getApplicationInfo(
+                        val applicationInfo = AppHelper.getPackageInfo(
+                            context,
                             targetPackageName,
                             PackageManager.MATCH_UNINSTALLED_PACKAGES
-                        )
-                        appNameFlow.emit(
-                            applicationInfo.loadLabel(context.packageManager).toString()
-                        )
+                        )?.applicationInfo
+                        if (null != applicationInfo) {
+                            appNameFlow.emit(
+                                applicationInfo.loadLabel(context.packageManager).toString()
+                            )
+                        } else {
+                            appNameFlow.emit(targetPackageName)
+                        }
                     }
                 }
             }
