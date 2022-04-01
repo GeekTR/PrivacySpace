@@ -89,10 +89,14 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
 
         val miuiRvClass = classLoader.loadClassSafe("miuix.recyclerview.widget.RecyclerView")
         if (miuiRvClass != null) {
-            XposedHelpers.findAndHookConstructor(
+            var unhook: XC_MethodHook.Unhook? = null
+            unhook = XposedHelpers.findAndHookConstructor(
                 miuiRvClass,
                 Context::class.java,
-                GameBoosterHooker()
+                GameBoosterHooker {
+                    unhook?.unhook()
+                    XLog.d("unhook ${miuiRvClass.name} Constructor ${if (unhook != null) "succeed" else "failed"}!")
+                }
             )
         }
 
@@ -210,17 +214,16 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
         }
     }
 
-    private class GameBoosterHooker() : XC_MethodHook() {
-        private val hookCache = mutableSetOf<Class<*>>()
+    private class GameBoosterHooker(private val unhookCallback: () -> Unit) : XC_MethodHook() {
         private var list: MutableList<*>? = null
 
         override fun afterHookedMethod(param: MethodHookParam) {
             val thisClass = param.thisObject.javaClass
             if (param.method is Constructor<*>) {
-                if (hookCache.contains(thisClass) || !thisClass.name.startsWith("com.miui.gamebooster.windowmanager.")) {
+                if (!thisClass.name.startsWith("com.miui.gamebooster.windowmanager.")) {
                     return
                 }
-                hookCache.add(thisClass)
+                XLog.d("hook class $thisClass")
                 for (method in thisClass.declaredMethods) {
                     if (method.name != "setDockType"
                         && method.parameterCount == 1
@@ -229,10 +232,10 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
                         XposedBridge.hookMethod(method, this)
                     }
                 }
+                unhookCallback()
             } else {
-                if (list == null) {
-                    queryAndGetList(thisClass, param)
-                }
+                XLog.d("${param.thisObject.javaClass} ${param.method.name}() invoke")
+                queryAndGetList(thisClass, param)
                 val listObj = list ?: return
                 val iterator = listObj.iterator()
                 val shouldFilterAppList = HookMain.hiddenAppList
@@ -257,6 +260,7 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
                 declaredField.isAccessible = true
                 val packageName = declaredField.get(appInfo)?.getPackageName() ?: continue
                 if (packageName.isNotBlank() && shouldFilterAppList.contains(packageName)) {
+                    XLog.d("filter class $packageName")
                     return true
                 }
             }
@@ -268,7 +272,7 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
                 declaredField.isAccessible = true
                 val value = declaredField.get(param.thisObject)
                 list = value as? MutableList<*>
-                        ?: continue
+                    ?: continue
                 break
             }
         }
