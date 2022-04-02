@@ -44,11 +44,16 @@
     <string name="cancel" tools:ignore="ButtonCase">CANCEL</string>
     <string name="confirm">CONFIRM</string>
     <string name="tips_confirm_restart_system">Are you sure to restart the system？</string>
-    <string name="blind">Blind Apps</string>
-    <string name="tips_cancel_blind">\'%s\' has been blinded. After adding to the whitelist, the blinding will be canceled. Are you sure you want to do this?</string>
-    <string name="tips_cancel_whitelist">\'%s\' has been added to the whitelist, and will be removed from the whitelist after being blinded. Are you sure you want to do this?</string>
+    <string name="blind">Blacklist</string>
+    <string name="tips_cancel_blind">\'%s\' has been blacklisted. After it is added to the whitelist, it will be automatically removed from the blacklist. Are you sure you want to do this?</string>
+    <string name="tips_cancel_whitelist">\'%s\' has been whitelisted. After it is added to the blacklist, it will be automatically removed from the whitelist. Are you sure you want to do this?</string>
     <string name="restart_security">Restart Security</string>
     <string name="security_restart_successfully">Security restart successfully!</string>
     <string name="security_restart_failed">Security restart failed…</string>
     <string name="click_to_set_connected_apps">Connected with Others</string>
+    <string name="about">About</string>
+    <string name="about_page_app_intro">This app is an Xposed module that hides the app list globally.</string>
+    <string name="coolapk">Coolapk</string>
+    <string name="about_page_telegram_description">Privacy Space Alpha</string>
+    <string name="about_page_coolapk_description">Latest stable version</string>
 </resources>

@@ -405,14 +405,6 @@ private fun PopupMenuContent(
     ) {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
-        PopupItem(text = stringResource(id = R.string.set_white_list)) {
-            if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
-                context.showToast(context.getString(R.string.tips_go_active))
-                return@PopupItem
-            }
-            isPopupMenuShow.value = false
-            navController.navigate(RouteConstant.SET_WHITE_LIST)
-        }
         PopupItem(text = stringResource(id = R.string.add_hidden_apps)) {
             if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
                 context.showToast(context.getString(R.string.tips_go_active))
@@ -421,13 +413,21 @@ private fun PopupMenuContent(
             isPopupMenuShow.value = false
             navController.navigate(RouteConstant.ADD_HIDDEN_APPS)
         }
+        PopupItem(text = stringResource(id = R.string.set_white_list)) {
+            if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
+                context.showToast(context.getString(R.string.tips_go_active))
+                return@PopupItem
+            }
+            isPopupMenuShow.value = false
+            navController.navigate(RouteConstant.WHITELIST)
+        }
         PopupItem(text = stringResource(R.string.blind)) {
             if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
                 context.showToast(context.getString(R.string.tips_go_active))
                 return@PopupItem
             }
             isPopupMenuShow.value = false
-            navController.navigate(RouteConstant.ADD_BLIND_APPS)
+            navController.navigate(RouteConstant.BLACKLIST)
         }
         PopupItem(text = stringResource(R.string.reboot_desktop)) {
             isPopupMenuShow.value = false
@@ -452,29 +452,9 @@ private fun PopupMenuContent(
             isPopupMenuShow.value = false
             showAdjustLayoutDialog.value = true
         }
-        PopupItem(text = stringResource(R.string.current_app_version), onClick = {
+        PopupItem(text = "关于", onClick = {
             isPopupMenuShow.value = false
-            context.showToast(
-                String.format(
-                    context.getString(R.string.current_app_version_is),
-                    BuildConfig.VERSION_NAME
-                )
-            )
-        })
-        PopupItem(text = stringResource(R.string.view_update_info_coolapk), onClick = {
-            isPopupMenuShow.value = false
-            try {
-                context.openUrl("coolmarket://u/18765870")
-            } catch (e: Throwable) {
-                context.showToast(context.getString(R.string.coolapk_not_found))
-            }
-        })
-        PopupItem(text = stringResource(R.string.view_update_info_github), onClick = {
-            isPopupMenuShow.value = false
-            try {
-                context.openUrl("https://github.com/GeekTR/PrivacySpace")
-            } catch (ignored: Throwable) {
-            }
+            navController.navigate(RouteConstant.ABOUT)
         })
     }
 }

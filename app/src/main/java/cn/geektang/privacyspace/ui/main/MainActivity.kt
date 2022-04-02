@@ -17,6 +17,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import cn.geektang.privacyspace.constant.RouteConstant
+import cn.geektang.privacyspace.ui.screen.about.AboutScreen
 import cn.geektang.privacyspace.ui.screen.blind.AddBlindAppsScreen
 import cn.geektang.privacyspace.ui.screen.launcher.LauncherScreen
 import cn.geektang.privacyspace.ui.screen.managehiddenapps.AddHiddenAppsScreen
@@ -80,7 +81,7 @@ private fun Content() {
             composable(RouteConstant.ADD_HIDDEN_APPS) {
                 AddHiddenAppsScreen()
             }
-            composable(RouteConstant.SET_WHITE_LIST) {
+            composable(RouteConstant.WHITELIST) {
                 SetWhitelistScreen()
             }
             composable("${RouteConstant.SET_CONNECTED_APPS}?targetPackageName={targetPackageName}") {
@@ -89,8 +90,12 @@ private fun Content() {
                 }
                 SetConnectedAppsScreen()
             }
-            composable(RouteConstant.ADD_BLIND_APPS) {
+            composable(RouteConstant.BLACKLIST) {
                 AddBlindAppsScreen()
+            }
+
+            composable(RouteConstant.ABOUT) {
+                AboutScreen()
             }
         }
     }

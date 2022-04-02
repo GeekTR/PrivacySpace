@@ -5,9 +5,11 @@ object RouteConstant {
 
     const val ADD_HIDDEN_APPS = "addHiddenApps"
 
-    const val SET_WHITE_LIST = "setWhiteList"
+    const val WHITELIST = "Whitelist"
 
     const val SET_CONNECTED_APPS = "setConnectedApps"
 
-    const val ADD_BLIND_APPS = "addBlindApps"
+    const val BLACKLIST = "blacklist"
+
+    const val ABOUT = "about"
 }

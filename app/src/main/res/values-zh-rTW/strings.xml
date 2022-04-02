@@ -3,7 +3,7 @@
     <string name="menu">選單</string>
     <string name="set_white_list">設定白名單</string>
     <string name="display_system_apps">顯示系統App</string>
-    <string name="add_hidden_apps">新增隱藏的App</string>
+    <string name="add_hidden_apps">隱藏App</string>
     <string name="reboot_desktop">重啟桌面</string>
     <string name="reboot_system">重啟系統</string>
     <string name="loading">載入中...</string>
@@ -51,4 +51,9 @@
     <string name="security_restart_successfully">手機管家重啟成功!</string>
     <string name="security_restart_failed">手機管家重啟成功…</string>
     <string name="click_to_set_connected_apps">點我設定關聯應用</string>
+    <string name="about">關於</string>
+    <string name="about_page_app_intro">本應用是一個全局隱藏應用列表的Xposed模組</string>
+    <string name="coolapk">酷安</string>
+    <string name="about_page_telegram_description">隱秘空間Alpha版本</string>
+    <string name="about_page_coolapk_description">最新穩定版本</string>
 </resources>
