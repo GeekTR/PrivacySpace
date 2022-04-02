@@ -24,6 +24,7 @@ import cn.geektang.privacyspace.R
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.ui.widget.*
 import cn.geektang.privacyspace.util.*
+import com.google.accompanist.insets.navigationBarsPadding
 import kotlin.system.exitProcess
 
 @Composable
@@ -62,7 +63,7 @@ fun AddHiddenAppsScreen(viewModel: AddHiddenAppsViewModel = viewModel()) {
     )
 
     val context = LocalContext.current
-    NoticeDialog(context)
+    NoticeDialogLocal(context)
 
     OnLifecycleEvent { event ->
         if (event == Lifecycle.Event.ON_PAUSE
@@ -75,15 +76,20 @@ fun AddHiddenAppsScreen(viewModel: AddHiddenAppsViewModel = viewModel()) {
 }
 
 @Composable
-private fun NoticeDialog(context: Context) {
+private fun NoticeDialogLocal(context: Context) {
     var isShowAlterDialog by remember {
         mutableStateOf(!context.sp.hasReadNotice2)
     }
     if (isShowAlterDialog) {
-        NoticeDialog(text = stringResource(R.string.tips_whitelist_magisk)) {
-            isShowAlterDialog = false
-            context.sp.hasReadNotice2 = true
-        }
+        NoticeDialog(
+            text = stringResource(R.string.tips_whitelist_magisk),
+            onPositiveButtonClick = {
+                isShowAlterDialog = false
+                context.sp.hasReadNotice2 = true
+            },
+            onDismissRequest = {
+                isShowAlterDialog = false
+            })
     }
 }
 
@@ -132,6 +138,9 @@ fun AddHiddenAppsContent(
                         }
                     })
                 }
+                item {
+                    Box(modifier = Modifier.navigationBarsPadding())
+                }
             })
         }
     }
@@ -166,6 +175,7 @@ fun AddHiddenAppsScreenPreview() {
         appIcon = ColorDrawable(),
         packageName = BuildConfig.APPLICATION_ID,
         appName = context.getString(R.string.app_name),
+        sharedUserId = null,
         isXposedModule = true,
         isSystemApp = false,
         applicationInfo = ApplicationInfo()

@@ -1,15 +1,13 @@
 package cn.geektang.privacyspace.ui.screen.managehiddenapps
 
 import android.app.Application
-import android.content.pm.PackageManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.util.AppHelper
-import cn.geektang.privacyspace.util.AppHelper.getPackageInfo
-import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
+import cn.geektang.privacyspace.util.AppHelper.isMatch
 import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.setDifferentValue
@@ -28,6 +26,7 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
     private var isModified = false
     private val connectedAppsCache = mutableMapOf<String, Set<String>>()
     private val sharedUserIdMap = mutableMapOf<String, String>()
+    private val blindApps = mutableSetOf<String>()
 
     init {
         viewModelScope.launch {
@@ -44,6 +43,9 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
 
                     multiUserConfig.clear()
                     multiUserConfig.putAll(it.multiUserConfig ?: emptyMap())
+
+                    blindApps.clear()
+                    blindApps.addAll(it.blind ?: emptyList())
                 }
             }
             launch {
@@ -67,8 +69,7 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
         val searchTextLowercase = searchText.lowercase(Locale.getDefault())
         if (searchText.isNotEmpty()) {
             appList = appList.filter {
-                it.packageName.lowercase(Locale.getDefault()).contains(searchTextLowercase)
-                        || it.appName.lowercase(Locale.getDefault()).contains(searchTextLowercase)
+                it.isMatch(searchTextLowercase)
             }
         }
         if (isShowSystemAppsFlow.value) {
@@ -82,7 +83,7 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
     }
 
     fun addApp2HiddenList(appInfo: AppInfo) {
-        val targetSharedUserId = appInfo.getSharedUserId(context)
+        val targetSharedUserId = appInfo.sharedUserId
         if (!targetSharedUserId.isNullOrEmpty()) {
             sharedUserIdMap[appInfo.packageName] = targetSharedUserId
         }
@@ -91,18 +92,10 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
         hiddenAppList.add(appInfo.packageName)
         hiddenAppListFlow.value = hiddenAppList
         if (appInfo.isXposedModule && appInfo.packageName != BuildConfig.APPLICATION_ID) {
-            val packageInfo = getPackageInfo(
-                context,
-                appInfo.packageName,
-                PackageManager.GET_META_DATA
-            )
-            val scopeList = if (packageInfo == null) {
-                emptyList()
-            } else {
-                AppHelper.getXposedModuleScopeList(context, packageInfo.applicationInfo).filter {
+            val scopeList =
+                AppHelper.getXposedModuleScopeList(context, appInfo.applicationInfo).filter {
                     it != ConfigConstant.ANDROID_FRAMEWORK
                 }
-            }
 
             if (scopeList.isNotEmpty()) {
                 val connectedApps =
@@ -119,7 +112,9 @@ class AddHiddenAppsViewModel(private val context: Application) : AndroidViewMode
         val hiddenAppList = hiddenAppListFlow.value.toMutableSet()
         hiddenAppList.remove(appInfo.packageName)
         hiddenAppListFlow.value = hiddenAppList
-        connectedAppsCache.remove(appInfo.packageName)
+        if (!blindApps.contains(appInfo.packageName)) {
+            connectedAppsCache.remove(appInfo.packageName)
+        }
         multiUserConfig.remove(appInfo.packageName)
         isModified = true
     }

@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.bean.AppInfo
 import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.util.AppHelper
-import cn.geektang.privacyspace.util.AppHelper.getSharedUserId
+import cn.geektang.privacyspace.util.AppHelper.isMatch
 import cn.geektang.privacyspace.util.AppHelper.sortApps
 import cn.geektang.privacyspace.util.ConfigHelper
 import cn.geektang.privacyspace.util.setDifferentValue
@@ -19,6 +19,7 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
     val allAppListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
     val appListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
     val whitelistFlow = MutableStateFlow<Set<String>>(emptySet())
+    val blindAppsFlow = MutableStateFlow<Set<String>>(emptySet())
     val showSystemAppsFlow = MutableStateFlow(true)
     val showSelectAll = MutableStateFlow(false)
     val searchTextFlow = MutableStateFlow("")
@@ -30,6 +31,7 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
             launch {
                 ConfigHelper.configDataFlow.collect {
                     whitelistFlow.value = it.whitelist
+                    blindAppsFlow.value = it.blind ?: emptySet()
 
                     val sharedUserIdMapNew = it.sharedUserIdMap ?: emptyMap()
                     sharedUserIdMap.clear()
@@ -49,7 +51,7 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
     }
 
     fun addApp2Whitelist(appInfo: AppInfo) {
-        val targetSharedUserId = appInfo.getSharedUserId(context)
+        val targetSharedUserId = appInfo.sharedUserId
         if (!targetSharedUserId.isNullOrEmpty()) {
             sharedUserIdMap[appInfo.packageName] = targetSharedUserId
         }
@@ -76,8 +78,7 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
         val searchTextLowercase = searchText.lowercase(Locale.getDefault())
         if (searchText.isNotEmpty()) {
             appList = appList.filter {
-                it.packageName.lowercase(Locale.getDefault()).contains(searchTextLowercase)
-                        || it.appName.lowercase(Locale.getDefault()).contains(searchTextLowercase)
+                it.isMatch(searchTextLowercase)
             }
         }
 
@@ -93,7 +94,15 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
 
     fun tryUpdateConfig() {
         if (isModified) {
-            ConfigHelper.updateWhitelist(whitelistFlow.value, sharedUserIdMap)
+            val whitelist = whitelistFlow.value
+            val blindApps = blindAppsFlow.value.toMutableSet()
+            for (app in whitelist) {
+                if (blindApps.contains(app)) {
+                    blindApps.remove(app)
+                }
+            }
+
+            ConfigHelper.updateWhitelist(whitelistFlow.value, sharedUserIdMap, blindApps)
             isModified = false
         }
     }

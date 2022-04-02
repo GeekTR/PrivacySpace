@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,7 +33,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.Lifecycle
@@ -46,14 +46,15 @@ import cn.geektang.privacyspace.constant.RouteConstant
 import cn.geektang.privacyspace.constant.UiSettings
 import cn.geektang.privacyspace.constant.UiSettings.obtainCellContentPaddingRatio
 import cn.geektang.privacyspace.constant.UiSettings.obtainCellCount
+import cn.geektang.privacyspace.ui.widget.NoticeDialog
 import cn.geektang.privacyspace.ui.widget.PopupItem
 import cn.geektang.privacyspace.ui.widget.PopupMenu
 import cn.geektang.privacyspace.ui.widget.TopBar
 import cn.geektang.privacyspace.util.*
 import cn.geektang.privacyspace.util.AppHelper.getLauncherPackageName
 import coil.compose.rememberImagePainter
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlin.system.exitProcess
 
 @Composable
 fun LauncherScreen(
@@ -63,6 +64,7 @@ fun LauncherScreen(
     val systemUsers = viewModel.systemUsers
     val multiUserConfig = viewModel.multiUserConfig
     val configData by viewModel.configData
+    val connectedApps = viewModel.connectedApps
     val loadStatus by ConfigHelper.loadingStatusFlow.collectAsState()
     val context = LocalContext.current
     val isShowMultiUserConfigSettingsDialog = remember {
@@ -113,6 +115,7 @@ fun LauncherScreen(
         appList = appList,
         systemUsers = systemUsers,
         configData = configData,
+        connectedApps = connectedApps,
         cellCount = cellCount.value,
         cellContentPaddingRatio = cellContentPaddingRatio.value,
         loadStatus = loadStatus,
@@ -138,7 +141,13 @@ fun LauncherScreen(
         mutableStateOf(!context.sp.hasReadNotice)
     }
     if (isShowAlterDialog.value) {
-        NoticeDialog(isShowAlterDialog, context)
+        NoticeDialog(text = stringResource(id = R.string.launcher_notice),
+            onDismissRequest = {
+                isShowAlterDialog.value = false
+            }, onPositiveButtonClick = {
+                context.sp.hasReadNotice = true
+                isShowAlterDialog.value = false
+            })
     }
     val coroutineScope = rememberCoroutineScope()
     OnLifecycleEvent(onEvent = { event ->
@@ -153,54 +162,13 @@ fun LauncherScreen(
     })
 }
 
-@Composable
-private fun NoticeDialog(
-    isShowAlterDialog: MutableState<Boolean>,
-    context: Context
-) {
-    AlertDialog(onDismissRequest = { isShowAlterDialog.value = false },
-        properties = DialogProperties(
-            dismissOnBackPress = false,
-            dismissOnClickOutside = false
-        ),
-        buttons = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 15.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(onClick = {
-                    exitProcess(0)
-                }) {
-                    Text(
-                        text = stringResource(R.string.launcher_notice_cancel),
-                        color = MaterialTheme.colors.secondary
-                    )
-                }
-                TextButton(onClick = {
-                    isShowAlterDialog.value = false
-                    context.sp.hasReadNotice = true
-                }) {
-                    Text(
-                        text = stringResource(R.string.launcher_notice_confirm),
-                        color = MaterialTheme.colors.primary
-                    )
-                }
-            }
-        }, text = {
-            Text(text = stringResource(id = R.string.launcher_notice))
-        }, title = {
-            Text(text = stringResource(R.string.tips))
-        })
-}
-
 @OptIn(ExperimentalFoundationApi::class, ExperimentalAnimationApi::class)
 @Composable
 private fun LauncherScreenContent(
     appList: List<AppInfo>,
     systemUsers: List<SystemUserInfo>,
     configData: ConfigData,
+    connectedApps: Map<String, Set<String>>,
     cellCount: Int,
     cellContentPaddingRatio: Float,
     loadStatus: Int,
@@ -221,6 +189,9 @@ private fun LauncherScreenContent(
     val isShowPopupMenu = remember {
         mutableStateOf(false)
     }
+    val dismissPopupMenu = {
+        isShowPopupMenu.value = false
+    }
     val actionsWrapper = object : LauncherActions {
         override fun showAppItemMenu(appInfo: AppInfo, offset: Offset) {
             popupMenuAppInfo = appInfo
@@ -230,32 +201,33 @@ private fun LauncherScreenContent(
 
         override fun uninstall(appInfo: AppInfo) {
             actions.uninstall(appInfo)
-            isShowPopupMenu.value = false
+            dismissPopupMenu()
         }
 
         override fun cancelHide(appInfo: AppInfo) {
             actions.cancelHide(appInfo)
-            isShowPopupMenu.value = false
+            dismissPopupMenu()
         }
 
         override fun connectTo(sourceApp: AppInfo, targetApp: String) {
             actions.connectTo(sourceApp, targetApp)
-            isShowPopupMenu.value = false
+            dismissPopupMenu()
         }
 
         override fun disconnectTo(sourceApp: AppInfo, targetApp: String) {
             actions.disconnectTo(sourceApp, targetApp)
-            isShowPopupMenu.value = false
+            dismissPopupMenu()
         }
 
         override fun onMultiUserConfigSettingsItemClick(appInfo: AppInfo) {
             actions.onMultiUserConfigSettingsItemClick(appInfo)
-            isShowPopupMenu.value = false
+            dismissPopupMenu()
         }
     }
 
     AppItemPopupMenu(
         configData = configData,
+        connectedApps = connectedApps,
         systemUsers = systemUsers,
         popupMenuAppInfo = popupMenuAppInfo,
         popupMenuOffset = popupMenuOffset,
@@ -268,11 +240,28 @@ private fun LauncherScreenContent(
             title = stringResource(id = R.string.app_name),
             showNavigationIcon = false,
             actions = {
-                IconButton(onClick = { isPopupMenuShow.value = true }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = stringResource(R.string.menu)
-                    )
+                val context = LocalContext.current
+                val navController = LocalNavHostController.current
+                Row {
+                    IconButton(onClick = {
+                        if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
+                            context.showToast(context.getString(R.string.tips_go_active))
+                            return@IconButton
+                        }
+                        isPopupMenuShow.value = false
+                        navController.navigate(RouteConstant.ADD_HIDDEN_APPS)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = stringResource(id = R.string.add_hidden_apps)
+                        )
+                    }
+                    IconButton(onClick = { isPopupMenuShow.value = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.menu)
+                        )
+                    }
                 }
             }
         )
@@ -311,6 +300,7 @@ private fun LauncherScreenContent(
 @Composable
 private fun AppItemPopupMenu(
     configData: ConfigData,
+    connectedApps: Map<String, Set<String>>,
     systemUsers: List<SystemUserInfo>,
     popupMenuAppInfo: AppInfo?,
     popupMenuOffset: Offset?,
@@ -336,7 +326,7 @@ private fun AppItemPopupMenu(
                 }
                 val isShowDesktopMenu = !configData.whitelist.contains(launcherPackageName)
                 val isHideToDesktop =
-                    configData.connectedApps[popupMenuAppInfo?.packageName ?: ""]?.contains(
+                    connectedApps[popupMenuAppInfo?.packageName ?: ""]?.contains(
                         launcherPackageName
                     ) == true
                 Column(
@@ -352,8 +342,8 @@ private fun AppItemPopupMenu(
                     })
                     if (isShowDesktopMenu) {
                         val text =
-                            if (isHideToDesktop) stringResource(R.string.disconnect_with_desktop) else stringResource(
-                                R.string.connect_with_desktop
+                            if (isHideToDesktop) stringResource(R.string.disconnect_with_launcher) else stringResource(
+                                R.string.connect_with_launcher
                             )
                         PopupItem(text = text, onClick = {
                             if (isHideToDesktop) {
@@ -415,14 +405,6 @@ private fun PopupMenuContent(
     ) {
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
-        PopupItem(text = stringResource(id = R.string.set_white_list)) {
-            if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
-                context.showToast(context.getString(R.string.tips_go_active))
-                return@PopupItem
-            }
-            isPopupMenuShow.value = false
-            navController.navigate(RouteConstant.SET_WHITE_LIST)
-        }
         PopupItem(text = stringResource(id = R.string.add_hidden_apps)) {
             if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
                 context.showToast(context.getString(R.string.tips_go_active))
@@ -431,27 +413,37 @@ private fun PopupMenuContent(
             isPopupMenuShow.value = false
             navController.navigate(RouteConstant.ADD_HIDDEN_APPS)
         }
-        PopupItem(text = stringResource(R.string.reboot_desktop)) {
-            isPopupMenuShow.value = false
-            scope.launch {
-                syncConfig()
-                val isSucceed =
-                    Su.exec("am force-stop ${context.getLauncherPackageName() ?: "com.miui.home"}")
-                if (isSucceed) {
-                    context.showToast(context.getString(R.string.desktop_restart_successfully))
-                } else {
-                    context.showToast(context.getString(R.string.desktop_restart_failed))
-                }
-            }
-        }
-        PopupItem(text = stringResource(R.string.reboot_system)) {
+        PopupItem(text = stringResource(id = R.string.set_white_list)) {
             if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
                 context.showToast(context.getString(R.string.tips_go_active))
                 return@PopupItem
             }
             isPopupMenuShow.value = false
-            ConfigHelper.rebootTheSystem()
+            navController.navigate(RouteConstant.WHITELIST)
         }
+        PopupItem(text = stringResource(R.string.blind)) {
+            if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
+                context.showToast(context.getString(R.string.tips_go_active))
+                return@PopupItem
+            }
+            isPopupMenuShow.value = false
+            navController.navigate(RouteConstant.BLACKLIST)
+        }
+        PopupItem(text = stringResource(R.string.reboot_desktop)) {
+            isPopupMenuShow.value = false
+            scope.launch {
+                syncConfig()
+                val isSucceed =
+                    ConfigHelper.forceStop(context.getLauncherPackageName() ?: "com.miui.home")
+                if (isSucceed) {
+                    context.showToast(context.getString(R.string.launcher_restart_successfully))
+                } else {
+                    context.showToast(context.getString(R.string.launcher_restart_failed))
+                }
+            }
+        }
+        RestartSecurityPopupItem(isPopupMenuShow, scope, syncConfig, context)
+        RestartSystemPopupItem(loadStatus, context, isPopupMenuShow)
         PopupItem(text = stringResource(R.string.screen_layout)) {
             if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
                 context.showToast(context.getString(R.string.tips_go_active))
@@ -460,27 +452,77 @@ private fun PopupMenuContent(
             isPopupMenuShow.value = false
             showAdjustLayoutDialog.value = true
         }
-        PopupItem(text = stringResource(R.string.current_app_version), onClick = {
+        PopupItem(text = "关于", onClick = {
             isPopupMenuShow.value = false
-            context.showToast(
-                String.format(
-                    context.getString(R.string.current_app_version_is),
-                    BuildConfig.VERSION_NAME
-                )
-            )
+            navController.navigate(RouteConstant.ABOUT)
         })
-        PopupItem(text = stringResource(R.string.view_update_info_coolapk), onClick = {
+    }
+}
+
+@Composable
+private fun RestartSecurityPopupItem(
+    isPopupMenuShow: MutableState<Boolean>,
+    scope: CoroutineScope,
+    syncConfig: suspend () -> Unit,
+    context: Context
+) {
+    val isSecurityInstalled by remember {
+        mutableStateOf(AppHelper.getPackageInfo(context, "com.miui.securitycenter") != null)
+    }
+    if (isSecurityInstalled) {
+        PopupItem(text = stringResource(R.string.restart_security)) {
             isPopupMenuShow.value = false
-            try {
-                context.openUrl("coolmarket://u/18765870")
-            } catch (e: Throwable) {
-                context.showToast(context.getString(R.string.coolapk_not_found))
+            scope.launch {
+                syncConfig()
+                val isSucceed =
+                    ConfigHelper.forceStop("com.miui.securitycenter")
+                if (isSucceed) {
+                    context.showToast(context.getString(R.string.security_restart_successfully))
+                } else {
+                    context.showToast(context.getString(R.string.security_restart_failed))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RestartSystemPopupItem(
+    loadStatus: Int,
+    context: Context,
+    isPopupMenuShow: MutableState<Boolean>
+) {
+    var isShowConfirmDialog by remember {
+        mutableStateOf(false)
+    }
+    if (isShowConfirmDialog) {
+        AlertDialog(onDismissRequest = { }, text = {
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                text = stringResource(R.string.tips_confirm_restart_system)
+            )
+        }, buttons = {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = { isShowConfirmDialog = false }) {
+                    Text(text = stringResource(R.string.cancel))
+                }
+                TextButton(onClick = {
+                    if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
+                        context.showToast(context.getString(R.string.tips_go_active))
+                        return@TextButton
+                    }
+                    isPopupMenuShow.value = false
+                    isShowConfirmDialog = false
+                    ConfigHelper.rebootTheSystem()
+                }) {
+                    Text(text = stringResource(R.string.confirm))
+                }
             }
         })
-        PopupItem(text = stringResource(R.string.view_update_info_github), onClick = {
-            isPopupMenuShow.value = false
-            context.openUrl("https://github.com/GeekTR/PrivacySpace")
-        })
+    }
+
+    PopupItem(text = stringResource(R.string.reboot_system)) {
+        isShowConfirmDialog = true
     }
 }
 
@@ -597,6 +639,7 @@ fun LauncherScreenPreview() {
         appIcon = ColorDrawable(),
         packageName = BuildConfig.APPLICATION_ID,
         appName = context.getString(R.string.app_name),
+        sharedUserId = null,
         isXposedModule = true,
         isSystemApp = true,
         applicationInfo = ApplicationInfo()
@@ -605,6 +648,7 @@ fun LauncherScreenPreview() {
         appList = listOf(appInfo, appInfo, appInfo, appInfo, appInfo, appInfo),
         systemUsers = emptyList(),
         configData = ConfigData.EMPTY,
+        connectedApps = emptyMap(),
         cellCount = 4,
         cellContentPaddingRatio = 0.5f,
         ConfigHelper.LOADING_STATUS_SUCCESSFUL,

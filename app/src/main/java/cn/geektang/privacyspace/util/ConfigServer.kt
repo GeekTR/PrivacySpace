@@ -1,8 +1,10 @@
 package cn.geektang.privacyspace.util
 
 import android.app.ActivityThread
+import android.content.pm.PackageManager
 import android.content.pm.UserInfo
 import android.os.Binder
+import android.os.ServiceManager
 import android.os.SystemProperties
 import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.bean.SystemUserInfo
@@ -22,16 +24,19 @@ class ConfigServer : XC_MethodHook() {
         const val UPDATE_CONFIG = "updateConfig:"
         const val REBOOT_THE_SYSTEM = "rebootTheSystem"
         const val GET_USERS = "getUsers"
+        const val FORCE_STOP = "forceStop:"
 
         const val EXEC_SUCCEED = "1"
         const val EXEC_FAILED = "0"
     }
 
+    private lateinit var classLoader: ClassLoader
     private var pmsClass: Class<*>? = null
     private var userInfoListCache: Collection<*>? = null
 
     fun start(classLoader: ClassLoader) {
         pmsClass = HookUtil.loadPms(classLoader)
+        this.classLoader = classLoader
         if (pmsClass == null) {
             XLog.e("ConfigServer start failed.")
             return
@@ -67,7 +72,8 @@ class ConfigServer : XC_MethodHook() {
             "getInstallerPackageName" -> {
                 hookGetInstallerPackageName(param)
             }
-            else -> {}
+            else -> {
+            }
         }
     }
 
@@ -109,7 +115,49 @@ class ConfigServer : XC_MethodHook() {
                 updateConfig(arg)
                 param.result = ""
             }
+            firstArg.startsWith(FORCE_STOP) -> {
+                val arg = firstArg.substring(FORCE_STOP.length)
+                param.result = forceStopPackage(arg)
+            }
         }
+    }
+
+    private fun forceStopPackage(packageName: String): String {
+        XLog.d("forceStopPackage = $packageName")
+        val callingUid = Binder.getCallingUid()
+        val ams = ServiceManager.getService("activity")
+        val checkPermissionUnhook = XposedHelpers.findAndHookMethod(
+            ams.javaClass,
+            "checkPermission",
+            String::class.java,
+            Int::class.javaPrimitiveType,
+            Int::class.javaPrimitiveType,
+            object : XC_MethodHook() {
+                override fun beforeHookedMethod(param: MethodHookParam) {
+                    val uid = param.args[2]
+                    if (callingUid == uid) {
+                        param.result = PackageManager.PERMISSION_GRANTED
+                    }
+                }
+            }
+        )
+
+        val isExecSucceed = try {
+            val method = ams.javaClass.getDeclaredMethod(
+                "forceStopPackage",
+                String::class.java,
+                Int::class.javaPrimitiveType
+            )
+            method.isAccessible = true
+            method.invoke(ams, packageName, 0)
+            EXEC_SUCCEED
+        } catch (e: Throwable) {
+            XLog.e(e, "forceStopPackage $packageName failed.")
+            EXEC_FAILED
+        } finally {
+            checkPermissionUnhook.unhook()
+        }
+        return isExecSucceed
     }
 
     private fun queryConfig(): String {

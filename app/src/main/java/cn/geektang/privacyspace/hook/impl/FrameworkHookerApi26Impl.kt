@@ -16,8 +16,10 @@ object FrameworkHookerApi26Impl : XC_MethodHook(), Hooker {
     private lateinit var pmsClass: Class<*>
     private lateinit var packageSettingClass: Class<*>
     private lateinit var getPackageNameForUidMethod: Method
+    private lateinit var classLoader: ClassLoader
 
     override fun start(classLoader: ClassLoader) {
+        this.classLoader = classLoader
         try {
             pmsClass = HookUtil.loadPms(classLoader) ?: throw PackageManager.NameNotFoundException()
             packageSettingClass =
@@ -69,6 +71,7 @@ object FrameworkHookerApi26Impl : XC_MethodHook(), Hooker {
         for (resolveInfo in resultList) {
             val targetPackageName = (resolveInfo as? ResolveInfo)?.getPackageName() ?: continue
             val shouldIntercept = HookChecker.shouldIntercept(
+                classLoader,
                 userId,
                 targetPackageName,
                 callingPackageName
@@ -97,6 +100,7 @@ object FrameworkHookerApi26Impl : XC_MethodHook(), Hooker {
                 ?.toString()?.split(":")?.first() ?: return
 
         val shouldIntercept = HookChecker.shouldIntercept(
+            classLoader,
             userId,
             targetPackageName,
             callingPackageName

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileNotFoundException
 
 object ConfigHelper {
     const val LOADING_STATUS_INIT = 0
@@ -91,13 +92,16 @@ object ConfigHelper {
         }
     }
 
-    fun loadConfigWithSystemApp(): ConfigData? {
+    fun loadConfigWithSystemApp(packageName: String): ConfigData? {
         val configFile =
             File("${ConfigConstant.CONFIG_FILE_FOLDER}${ConfigConstant.CONFIG_FILE_JSON}")
         return try {
             JsonHelper.configAdapter().fromJson(configFile.readText())
+        } catch (e: FileNotFoundException) {
+            XLog.i("$packageName ConfigHelper loadConfigWithSystemApp failed.")
+            null
         } catch (e: Throwable) {
-            XLog.e(e, "ConfigHelper loadConfigWithSystemApp failed.")
+            XLog.e(e, "$packageName ConfigHelper loadConfigWithSystemApp failed.")
             null
         }
     }
@@ -138,13 +142,31 @@ object ConfigHelper {
         }
     }
 
-    fun updateWhitelist(
+    fun updateBlindApps(
         whitelistNew: Set<String>,
-        sharedUserIdMapNew: Map<String, String>
+        blindAppsListNew: Set<String>,
+        connectedAppsNew : Map<String, Set<String>>
     ) {
         val newConfigData = configDataFlow.value.copy(
             whitelist = whitelistNew.toSet(),
-            sharedUserIdMap = sharedUserIdMapNew.toMap()
+            blind = blindAppsListNew.toSet(),
+            connectedApps = connectedAppsNew.toMap()
+        )
+        configDataFlow.value = newConfigData
+        scope.launch {
+            updateConfigInner(newConfigData)
+        }
+    }
+
+    fun updateWhitelist(
+        whitelistNew: Set<String>,
+        sharedUserIdMapNew: Map<String, String>,
+        blindApps: Set<String>? = null
+    ) {
+        val newConfigData = configDataFlow.value.copy(
+            whitelist = whitelistNew.toSet(),
+            sharedUserIdMap = sharedUserIdMapNew.toMap(),
+            blind = blindApps ?: configDataFlow.value.blind
         )
         configDataFlow.value = newConfigData
         scope.launch {
@@ -168,6 +190,10 @@ object ConfigHelper {
 
     fun rebootTheSystem() {
         configClient.rebootTheSystem()
+    }
+
+    fun forceStop(packageName: String): Boolean {
+        return configClient.forceStop(packageName)
     }
 
     suspend fun queryAllUsers(): List<SystemUserInfo>? {

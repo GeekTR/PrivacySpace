@@ -18,9 +18,15 @@ import cn.geektang.privacyspace.BuildConfig
 import cn.geektang.privacyspace.R
 import cn.geektang.privacyspace.bean.AppInfo
 import coil.compose.rememberImagePainter
+import com.google.accompanist.flowlayout.FlowRow
 
 @Composable
-fun AppInfoColumnItem(appInfo: AppInfo, isChecked: Boolean, onClick: () -> Unit) {
+fun AppInfoColumnItem(
+    appInfo: AppInfo,
+    isChecked: Boolean,
+    customButtons: List<(@Composable () -> Unit)> = emptyList(),
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .clickable(onClick = onClick)
@@ -36,10 +42,15 @@ fun AppInfoColumnItem(appInfo: AppInfo, isChecked: Boolean, onClick: () -> Unit)
         Column(
             modifier = Modifier
                 .weight(1f)
-                .padding(horizontal = 15.dp)
+                .padding(horizontal = 10.dp)
         ) {
-            Text(text = appInfo.appName, style = MaterialTheme.typography.subtitle1)
-            Text(text = appInfo.packageName, style = MaterialTheme.typography.body2)
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 5.dp)
+            ) {
+                Text(text = appInfo.appName, style = MaterialTheme.typography.subtitle1)
+                Text(text = appInfo.packageName, style = MaterialTheme.typography.body2)
+            }
             val chipTexts = mutableListOf<String>()
             if (appInfo.isSystemApp) {
                 chipTexts.add("SystemApp")
@@ -47,13 +58,25 @@ fun AppInfoColumnItem(appInfo: AppInfo, isChecked: Boolean, onClick: () -> Unit)
             if (appInfo.isXposedModule) {
                 chipTexts.add("XposedModule")
             }
-            if (chipTexts.isNotEmpty()) {
-                Row(modifier = Modifier.padding(top = 5.dp)) {
-                    for ((index, chipText) in chipTexts.withIndex()) {
-                        if (index != 0) {
-                            Spacer(modifier = Modifier.padding(start = 10.dp))
-                        }
-                        Chip(text = chipText)
+            if (!appInfo.sharedUserId.isNullOrEmpty()) {
+                chipTexts.add(appInfo.sharedUserId)
+            }
+            val showSetConnectButton = customButtons.isNotEmpty()
+            if (chipTexts.isNotEmpty() || showSetConnectButton) {
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(all = 2.5.dp)
+                ) {
+                    for (customButton in customButtons) {
+                        customButton()
+                    }
+
+                    for (chipText in chipTexts) {
+                        Chip(
+                            modifier = Modifier.padding(all = 2.5.dp),
+                            text = chipText
+                        )
                     }
                 }
             }
@@ -72,6 +95,7 @@ fun AppInfoColumnItemPreview() {
         appIcon = ColorDrawable(),
         packageName = BuildConfig.APPLICATION_ID,
         appName = context.getString(R.string.app_name),
+        sharedUserId = null,
         isXposedModule = true,
         isSystemApp = true,
         applicationInfo = ApplicationInfo()
