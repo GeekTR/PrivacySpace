@@ -56,4 +56,5 @@
     <string name="coolapk">Coolapk</string>
     <string name="about_page_telegram_description">Privacy Space Alpha</string>
     <string name="about_page_coolapk_description">Latest stable version</string>
+    <string name="restart_settings_app">Restart Settings App</string>
 </resources>

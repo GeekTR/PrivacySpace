@@ -56,4 +56,5 @@
     <string name="coolapk">酷安</string>
     <string name="about_page_telegram_description">隱秘空間Alpha版本</string>
     <string name="about_page_coolapk_description">最新穩定版本</string>
+    <string name="restart_settings_app">重啟Settings</string>
 </resources>
