@@ -31,10 +31,18 @@ object FrameworkHookerApi28Impl : XC_MethodHook(), Hooker {
             settingsClass = classLoader.tryLoadClass("com.android.server.pm.Settings")
             getAppIdMethod =
                 UserHandle::class.java.getDeclaredMethod("getAppId", Int::class.javaPrimitiveType)
-            getSettingLPrMethod =
-                settingsClass.getDeclaredMethod("getSettingLPr", Int::class.javaPrimitiveType)
             getAppIdMethod.isAccessible = true
-            getSettingLPrMethod.isAccessible = true
+
+            for (method in settingsClass.declaredMethods) {
+                if ((method.name == "getSettingLPr" || method.name == "getUserIdLPr")
+                    && method.parameterCount == 1
+                    && method.parameterTypes.first() == Int::class.javaPrimitiveType
+                ) {
+                    getSettingLPrMethod = method
+                    method.isAccessible = true
+                    break
+                }
+            }
         } catch (e: Throwable) {
             XLog.e(e, "pms load failed.")
             return
