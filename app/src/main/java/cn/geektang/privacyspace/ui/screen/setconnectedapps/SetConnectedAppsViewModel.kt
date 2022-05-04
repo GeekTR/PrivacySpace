@@ -6,7 +6,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.bean.AppInfo
-import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.util.AppHelper
 import cn.geektang.privacyspace.util.AppHelper.isMatch
 import cn.geektang.privacyspace.util.AppHelper.sortApps
@@ -66,11 +65,10 @@ class SetConnectedAppsViewModel(
             }
 
             launch {
-                val defaultWhitelist = ConfigConstant.defaultWhitelist
                 AppHelper.allApps.collect { apps ->
                     allAppListFlow.value =
                         apps.filter {
-                            !defaultWhitelist.contains(it.packageName) && targetPackageName != it.packageName
+                            targetPackageName != it.packageName
                         }
                             .sortApps(context = context, toTopCollections = whitelistFlow.value)
                     updateAppInfoListFlow()
