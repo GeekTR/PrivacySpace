@@ -192,8 +192,12 @@ object ConfigHelper {
         configClient.rebootTheSystem()
     }
 
-    fun forceStop(packageName: String): Boolean {
-        return configClient.forceStop(packageName)
+    suspend fun forceStop(packageName: String): Boolean {
+        val result = configClient.forceStop(packageName)
+        if(!result){
+            Su.exec("am force-stop $packageName")
+        }
+        return true
     }
 
     suspend fun queryAllUsers(): List<SystemUserInfo>? {
