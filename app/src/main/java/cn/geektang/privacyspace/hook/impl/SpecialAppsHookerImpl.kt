@@ -107,7 +107,7 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
                 if (method.parameterCount == 1 && method.parameterTypes.first() == PackageInfo::class.java) {
                     XposedBridge.hookMethod(method, object : XC_MethodHook() {
                         override fun beforeHookedMethod(param: MethodHookParam) {
-                            val shouldFilterAppList = HookMain.hiddenAppList
+                            val shouldFilterAppList = HookMain.configData.hiddenAppList
                             val packageInfo = param.args.first() as PackageInfo
                             if (shouldFilterAppList.contains(packageInfo.packageName)) {
                                 param.result = Unit
@@ -120,7 +120,7 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
     }
 
     override fun afterHookedMethod(param: MethodHookParam) {
-        val shouldFilterAppList = HookMain.hiddenAppList
+        val shouldFilterAppList = HookMain.configData.hiddenAppList
         when (param.method.name) {
             "getInstalledPackages" -> {
                 param.result = (param.result as? List<*>?)?.filter {
@@ -238,7 +238,7 @@ object SpecialAppsHookerImpl : XC_MethodHook(), Hooker {
                 queryAndGetList(thisClass, param)
                 val listObj = list ?: return
                 val iterator = listObj.iterator()
-                val shouldFilterAppList = HookMain.hiddenAppList
+                val shouldFilterAppList = HookMain.configData.hiddenAppList
                 while (iterator.hasNext()) {
                     val appInfo = iterator.next() ?: continue
                     val appInfoClass = appInfo.javaClass

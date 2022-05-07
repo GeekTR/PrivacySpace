@@ -1,11 +1,12 @@
 package cn.geektang.privacyspace.util
 
-import cn.geektang.privacyspace.hook.HookMain
 import de.robv.android.xposed.XposedBridge
 
 object XLog {
+    var enableLog : Boolean = false
+
     fun d(message: String) {
-        if (HookMain.enableLog) {
+        if (enableLog) {
             XposedBridge.log("[PrivacySpace] [Debug] $message")
         }
     }

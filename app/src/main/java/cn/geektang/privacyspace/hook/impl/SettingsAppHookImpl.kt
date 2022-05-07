@@ -51,7 +51,7 @@ object SettingsAppHookImpl : Hooker, XC_MethodHook() {
     }
 
     override fun afterHookedMethod(param: MethodHookParam) {
-        val hiddenAppList = HookMain.hiddenAppList
+        val hiddenAppList = HookMain.configData.hiddenAppList
         when (param.method.name) {
             "getInstalledPackages" -> {
                 val result = param.result as ParceledListSlice<PackageInfo>

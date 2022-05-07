@@ -25,35 +25,10 @@ class HookMain : IXposedHookLoadPackage {
         private val configServer = ConfigServer()
 
         @Volatile
-        private var configData: ConfigData = ConfigData.EMPTY
-
-        @Volatile
-        var enableLog: Boolean = false
+        var configData: ConfigData = ConfigData.EMPTY
             private set
-
-        @Volatile
-        var hiddenAppList: Set<String> = emptySet()
-            private set
-
-        @Volatile
-        var whitelist: Set<String> = emptySet()
-            private set
-
-        @Volatile
-        var connectedApps: Map<String, Set<String>> = emptyMap()
-            private set
-
-        @Volatile
-        var multiUserConfig: Map<String, Set<Int>> = emptyMap()
-
-        @Volatile
-        var blind: Set<String> = emptySet()
 
         fun updateConfigData(data: ConfigData) {
-            enableLog = data.enableDetailLog
-            hiddenAppList = data.hiddenAppList
-            multiUserConfig = data.multiUserConfig ?: emptyMap()
-            blind = data.blind ?: emptySet()
             val sharedUserIdMap = data.sharedUserIdMap
             val whitelistTmp = data.whitelist.toMutableSet()
             val connectedAppsTpm = data.connectedApps.toMutableMap()
@@ -82,8 +57,12 @@ class HookMain : IXposedHookLoadPackage {
                 }
                 connectedAppsTpm.putAll(connectedAppsNew)
             }
-            whitelist = whitelistTmp
-            connectedApps = connectedAppsTpm
+
+            this.configData = configData.copy(
+                whitelist = whitelistTmp,
+                connectedApps = connectedAppsTpm
+            )
+            XLog.enableLog = configData.enableDetailLog
         }
     }
 
