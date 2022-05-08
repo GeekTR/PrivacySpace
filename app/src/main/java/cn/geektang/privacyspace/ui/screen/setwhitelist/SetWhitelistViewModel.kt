@@ -128,6 +128,11 @@ class SetWhitelistViewModel(private val context: Application) : AndroidViewModel
             for (appInfo in appListFlow.value) {
                 if (appInfo.isSystemApp && !whitelistNew.contains(appInfo.packageName)) {
                     whitelistNew.add(appInfo.packageName)
+
+                    val targetSharedUserId = appInfo.sharedUserId
+                    if (!targetSharedUserId.isNullOrEmpty()) {
+                        sharedUserIdMap[appInfo.packageName] = targetSharedUserId
+                    }
                 }
             }
         } else {
