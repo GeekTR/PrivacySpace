@@ -27,8 +27,9 @@ class SetConnectedAppsViewModel(
     val appNameFlow = MutableStateFlow("")
     val appListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
     val whitelistFlow = MutableStateFlow<Set<String>>(emptySet())
-    val showSystemAppsFlow = MutableStateFlow(false)
+    val showSystemAppsFlow = MutableStateFlow(true)
     val searchTextFlow = MutableStateFlow("")
+    val showSelectAll = MutableStateFlow(false)
     private var isModified = false
     private val sharedUserIdMap = mutableMapOf<String, String>()
 
@@ -112,6 +113,10 @@ class SetConnectedAppsViewModel(
         val whitelistNew = whitelistFlow.value.toMutableSet()
         whitelistNew.remove(appInfo.packageName)
         whitelistFlow.value = whitelistNew
+
+        if (appInfo.isSystemApp) {
+            showSelectAll.value = false
+        }
     }
 
     fun tryUpdateConfig() {
@@ -134,5 +139,33 @@ class SetConnectedAppsViewModel(
     fun updateSearchText(searchText: String) {
         searchTextFlow.value = searchText
         updateAppInfoListFlow()
+    }
+
+    fun selectAllSystemApps(selectAll: Boolean) {
+        if (selectAll && !showSystemAppsFlow.value) {
+            setShowSystemApps(true)
+        }
+        val whitelistNew = whitelistFlow.value.toMutableSet()
+        if (selectAll) {
+            for (appInfo in appListFlow.value) {
+                if (appInfo.isSystemApp && !whitelistNew.contains(appInfo.packageName)) {
+                    whitelistNew.add(appInfo.packageName)
+
+                    val targetSharedUserId = appInfo.sharedUserId
+                    if (!targetSharedUserId.isNullOrEmpty()) {
+                        sharedUserIdMap[appInfo.packageName] = targetSharedUserId
+                    }
+                }
+            }
+        } else {
+            for (appInfo in appListFlow.value) {
+                if (appInfo.isSystemApp) {
+                    whitelistNew.remove(appInfo.packageName)
+                }
+            }
+        }
+        whitelistFlow.value = whitelistNew
+        showSelectAll.value = selectAll
+        isModified = true
     }
 }
