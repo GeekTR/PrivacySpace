@@ -443,6 +443,7 @@ private fun PopupMenuContent(
             }
         }
         RestartSecurityPopupItem(isPopupMenuShow, scope, syncConfig, context)
+        RestartSettingsPopupItem(isPopupMenuShow, scope, syncConfig, context)
         RestartSystemPopupItem(loadStatus, context, isPopupMenuShow)
         PopupItem(text = stringResource(R.string.screen_layout)) {
             if (loadStatus == ConfigHelper.LOADING_STATUS_FAILED) {
@@ -452,7 +453,7 @@ private fun PopupMenuContent(
             isPopupMenuShow.value = false
             showAdjustLayoutDialog.value = true
         }
-        PopupItem(text = "关于", onClick = {
+        PopupItem(text = stringResource(id = R.string.about), onClick = {
             isPopupMenuShow.value = false
             navController.navigate(RouteConstant.ABOUT)
         })
@@ -476,6 +477,33 @@ private fun RestartSecurityPopupItem(
                 syncConfig()
                 val isSucceed =
                     ConfigHelper.forceStop("com.miui.securitycenter")
+                if (isSucceed) {
+                    context.showToast(context.getString(R.string.security_restart_successfully))
+                } else {
+                    context.showToast(context.getString(R.string.security_restart_failed))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RestartSettingsPopupItem(
+    isPopupMenuShow: MutableState<Boolean>,
+    scope: CoroutineScope,
+    syncConfig: suspend () -> Unit,
+    context: Context
+) {
+    val isSetingsInstalled by remember {
+        mutableStateOf(AppHelper.getPackageInfo(context, "com.android.settings") != null)
+    }
+    if (isSetingsInstalled) {
+        PopupItem(text = stringResource(R.string.restart_settings_app)) {
+            isPopupMenuShow.value = false
+            scope.launch {
+                syncConfig()
+                val isSucceed =
+                    ConfigHelper.forceStop("com.android.settings")
                 if (isSucceed) {
                     context.showToast(context.getString(R.string.security_restart_successfully))
                 } else {

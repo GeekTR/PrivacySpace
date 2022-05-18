@@ -28,6 +28,7 @@ fun SetConnectedAppsScreen(viewModel: SetConnectedAppsViewModel = viewModel()) {
     val appName by viewModel.appNameFlow.collectAsState()
     val showSystemApps by viewModel.showSystemAppsFlow.collectAsState()
     val searchText by viewModel.searchTextFlow.collectAsState()
+    val showSelectAll by viewModel.showSelectAll.collectAsState()
     val actions = object : SetConnectedAppsActions {
         override fun addApp2Whitelist(appInfo: AppInfo) {
             viewModel.addApp2HiddenList(appInfo)
@@ -44,11 +45,16 @@ fun SetConnectedAppsScreen(viewModel: SetConnectedAppsViewModel = viewModel()) {
         override fun onSearchTextChange(searchText: String) {
             viewModel.updateSearchText(searchText)
         }
+
+        override fun selectAllSystemApps(selectAll: Boolean) {
+            viewModel.selectAllSystemApps(selectAll)
+        }
     }
     SetConnectedAppsContent(
         appName = appName,
         isLoading = isLoading,
         showSystemApps = showSystemApps,
+        showSelectAll = showSelectAll,
         searchText = searchText,
         appList = appList,
         whitelist = whitelist,
@@ -68,8 +74,9 @@ fun SetConnectedAppsScreen(viewModel: SetConnectedAppsViewModel = viewModel()) {
 @Composable
 private fun SetConnectedAppsContent(
     appName: String,
-    isLoading : Boolean,
+    isLoading: Boolean,
     showSystemApps: Boolean,
+    showSelectAll: Boolean,
     searchText: String,
     appList: List<AppInfo>,
     whitelist: Set<String>,
@@ -81,10 +88,15 @@ private fun SetConnectedAppsContent(
     SetConnectedPopupMenu(
         isPopupMenuShow,
         showSystemApps,
+        showSelectAll,
         onSystemAppsVisibleChange = { showSystemApps ->
             isPopupMenuShow.value = false
             actions.setSystemAppsVisible(showSystemApps)
-        })
+        },
+        selectAllCallback = { selectAll ->
+            actions.selectAllSystemApps(selectAll)
+        }
+    )
 
     val navHostController = LocalNavHostController.current
     Column {
@@ -132,7 +144,9 @@ private fun SetConnectedAppsContent(
 private fun SetConnectedPopupMenu(
     popupMenuShow: MutableState<Boolean>,
     showSystemApps: Boolean,
-    onSystemAppsVisibleChange: (Boolean) -> Unit
+    showSelectAll: Boolean,
+    onSystemAppsVisibleChange: (Boolean) -> Unit,
+    selectAllCallback: (Boolean) -> Unit
 ) {
     PopupMenu(isShow = popupMenuShow) {
         Column(
@@ -144,6 +158,11 @@ private fun SetConnectedPopupMenu(
                 text = stringResource(R.string.display_system_apps),
                 checked = showSystemApps,
                 onCheckedChange = onSystemAppsVisibleChange
+            )
+            PopupCheckboxItem(
+                text = stringResource(R.string.select_all_system_apps),
+                checked = showSelectAll,
+                onCheckedChange = selectAllCallback
             )
         }
     }
@@ -161,5 +180,8 @@ interface SetConnectedAppsActions {
 
     fun onSearchTextChange(searchText: String) {
 
+    }
+
+    fun selectAllSystemApps(selectAll: Boolean){
     }
 }

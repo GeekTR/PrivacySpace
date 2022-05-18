@@ -78,7 +78,9 @@ class ConfigServer : XC_MethodHook() {
     }
 
     private fun hookGetInstallerPackageName(param: MethodHookParam) {
-        if (Binder.getCallingUid() != getClientUid()) {
+        val callingUid = Binder.getCallingUid()
+        if (callingUid != getPackageUid(BuildConfig.APPLICATION_ID) && callingUid != getPackageUid("com.android.settings")
+        ) {
             return
         }
         val firstArg = param.args.first()?.toString() ?: return
@@ -185,10 +187,10 @@ class ConfigServer : XC_MethodHook() {
         }
     }
 
-    private fun getClientUid(): Int {
+    private fun getPackageUid(packageName: String): Int {
         return try {
             ActivityThread.getPackageManager()
-                .getPackageUid(BuildConfig.APPLICATION_ID, 0, 0)
+                .getPackageUid(packageName, 0, 0)
         } catch (e: Throwable) {
             XLog.d("ConfigServer (${Binder.getCallingUid()}).getClientUid failed.")
             -1

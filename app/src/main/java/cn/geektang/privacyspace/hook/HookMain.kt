@@ -1,19 +1,19 @@
 package cn.geektang.privacyspace.hook
 
+import android.app.Application
+import android.content.Context
 import android.os.Build
 import android.os.FileObserver
-import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.bean.ConfigData
-import cn.geektang.privacyspace.hook.impl.FrameworkHookerApi26Impl
-import cn.geektang.privacyspace.hook.impl.FrameworkHookerApi28Impl
-import cn.geektang.privacyspace.hook.impl.FrameworkHookerApi30Impl
-import cn.geektang.privacyspace.hook.impl.SpecialAppsHookerImpl
-import cn.geektang.privacyspace.util.AppHelper
-import cn.geektang.privacyspace.util.ConfigHelper
-import cn.geektang.privacyspace.util.ConfigServer
-import cn.geektang.privacyspace.util.XLog
+import cn.geektang.privacyspace.constant.ConfigConstant
+import cn.geektang.privacyspace.hook.impl.*
+import cn.geektang.privacyspace.util.*
 import de.robv.android.xposed.IXposedHookLoadPackage
+import de.robv.android.xposed.XC_MethodHook
+import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import java.io.File
 
 class HookMain : IXposedHookLoadPackage {
@@ -25,35 +25,10 @@ class HookMain : IXposedHookLoadPackage {
         private val configServer = ConfigServer()
 
         @Volatile
-        private var configData: ConfigData = ConfigData.EMPTY
-
-        @Volatile
-        var enableLog: Boolean = false
+        var configData: ConfigData = ConfigData.EMPTY
             private set
-
-        @Volatile
-        var hiddenAppList: Set<String> = emptySet()
-            private set
-
-        @Volatile
-        var whitelist: Set<String> = emptySet()
-            private set
-
-        @Volatile
-        var connectedApps: Map<String, Set<String>> = emptyMap()
-            private set
-
-        @Volatile
-        var multiUserConfig: Map<String, Set<Int>> = emptyMap()
-
-        @Volatile
-        var blind : Set<String> = emptySet()
 
         fun updateConfigData(data: ConfigData) {
-            enableLog = data.enableDetailLog
-            hiddenAppList = data.hiddenAppList
-            multiUserConfig = data.multiUserConfig ?: emptyMap()
-            blind = data.blind ?: emptySet()
             val sharedUserIdMap = data.sharedUserIdMap
             val whitelistTmp = data.whitelist.toMutableSet()
             val connectedAppsTpm = data.connectedApps.toMutableMap()
@@ -82,8 +57,12 @@ class HookMain : IXposedHookLoadPackage {
                 }
                 connectedAppsTpm.putAll(connectedAppsNew)
             }
-            whitelist = whitelistTmp
-            connectedApps = connectedAppsTpm
+
+            this.configData = configData.copy(
+                whitelist = whitelistTmp,
+                connectedApps = connectedAppsTpm
+            )
+            XLog.enableLog = configData.enableDetailLog
         }
     }
 
@@ -104,7 +83,25 @@ class HookMain : IXposedHookLoadPackage {
                     FrameworkHookerApi26Impl.start(classLoader)
                 }
             }
+        } else if ("com.android.settings" == lpparam.packageName) {
+            SettingsAppHookImpl.start(classLoader)
+            XposedHelpers.findAndHookMethod(
+                Application::class.java,
+                "onCreate",
+                object : XC_MethodHook() {
+                    override fun beforeHookedMethod(param: MethodHookParam) {
+                        val configClient = ConfigClient(param.thisObject as Context)
+                        MainScope().launch {
+                            val config = configClient.queryConfig()
+                            XLog.i("config = $config")
+                            if (null != config) {
+                                updateConfigData(config)
+                            }
+                        }
+                    }
+                })
         } else if (AppHelper.isSystemApp(lpparam.appInfo)) {
+            XLog.i("Hook class fdfasdfs start.")
             loadConfigDataAndParse()
             startWatchingConfigFiles()
             SpecialAppsHookerImpl.start(classLoader)
@@ -129,7 +126,8 @@ class HookMain : IXposedHookLoadPackage {
     }
 
     private fun loadConfigDataAndParse() {
-        val configDataNew = ConfigHelper.loadConfigWithSystemApp(packageName ?: "") ?: ConfigData.EMPTY
+        val configDataNew =
+            ConfigHelper.loadConfigWithSystemApp(packageName ?: "") ?: ConfigData.EMPTY
         if (configDataNew != configData) {
             configData = configDataNew
             updateConfigData(configDataNew)

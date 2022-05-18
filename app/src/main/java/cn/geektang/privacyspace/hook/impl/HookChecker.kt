@@ -17,6 +17,7 @@ object HookChecker {
     private var greenChannel = false
     private var defaultBlindWhitelist: Set<String> = emptySet()
 
+    @JvmStatic
     fun shouldIntercept(
         classLoader: ClassLoader,
         userId: Int,
@@ -47,13 +48,15 @@ object HookChecker {
         }
 
         var result = false
-        val shouldFilterAppList = HookMain.hiddenAppList
-        val userWhitelist = HookMain.whitelist
-        val connectedAppsInfoMap = HookMain.connectedApps
-        val multiUserConfig = HookMain.multiUserConfig
-        val blindApps = HookMain.blind
+        val configData = HookMain.configData
+        val shouldFilterAppList = configData.hiddenAppList
+        val userWhitelist = configData.whitelist
+        val connectedAppsInfoMap = configData.connectedApps
+        val multiUserConfig = configData.multiUserConfig ?: emptyMap()
+        val blindApps = configData.blind ?: emptySet()
         val defaultWhitelist = ConfigConstant.defaultWhitelist
         val defaultBlindWhitelist = defaultBlindWhitelist
+        XLog.enableLog = configData.enableDetailLog
 
         if (defaultBlindWhitelist.isNotEmpty()
             && !defaultBlindWhitelist.contains(targetPackageName)
@@ -61,7 +64,7 @@ object HookChecker {
             && connectedAppsInfoMap[callingPackageName]?.contains(targetPackageName) != true
             && connectedAppsInfoMap[targetPackageName]?.contains(callingPackageName) != true
         ) {
-            XLog.i("$callingPackageName was prevented from reading ${targetPackageName}.")
+            XLog.d("$callingPackageName was prevented from reading ${targetPackageName}.")
             return true
         }
 

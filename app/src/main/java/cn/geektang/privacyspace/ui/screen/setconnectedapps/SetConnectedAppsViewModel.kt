@@ -6,7 +6,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import cn.geektang.privacyspace.bean.AppInfo
-import cn.geektang.privacyspace.constant.ConfigConstant
 import cn.geektang.privacyspace.util.AppHelper
 import cn.geektang.privacyspace.util.AppHelper.isMatch
 import cn.geektang.privacyspace.util.AppHelper.sortApps
@@ -28,8 +27,9 @@ class SetConnectedAppsViewModel(
     val appNameFlow = MutableStateFlow("")
     val appListFlow = MutableStateFlow<List<AppInfo>>(emptyList())
     val whitelistFlow = MutableStateFlow<Set<String>>(emptySet())
-    val showSystemAppsFlow = MutableStateFlow(false)
+    val showSystemAppsFlow = MutableStateFlow(true)
     val searchTextFlow = MutableStateFlow("")
+    val showSelectAll = MutableStateFlow(false)
     private var isModified = false
     private val sharedUserIdMap = mutableMapOf<String, String>()
 
@@ -66,11 +66,10 @@ class SetConnectedAppsViewModel(
             }
 
             launch {
-                val defaultWhitelist = ConfigConstant.defaultWhitelist
                 AppHelper.allApps.collect { apps ->
                     allAppListFlow.value =
                         apps.filter {
-                            !defaultWhitelist.contains(it.packageName) && targetPackageName != it.packageName
+                            targetPackageName != it.packageName
                         }
                             .sortApps(context = context, toTopCollections = whitelistFlow.value)
                     updateAppInfoListFlow()
@@ -114,6 +113,10 @@ class SetConnectedAppsViewModel(
         val whitelistNew = whitelistFlow.value.toMutableSet()
         whitelistNew.remove(appInfo.packageName)
         whitelistFlow.value = whitelistNew
+
+        if (appInfo.isSystemApp) {
+            showSelectAll.value = false
+        }
     }
 
     fun tryUpdateConfig() {
@@ -136,5 +139,33 @@ class SetConnectedAppsViewModel(
     fun updateSearchText(searchText: String) {
         searchTextFlow.value = searchText
         updateAppInfoListFlow()
+    }
+
+    fun selectAllSystemApps(selectAll: Boolean) {
+        if (selectAll && !showSystemAppsFlow.value) {
+            setShowSystemApps(true)
+        }
+        val whitelistNew = whitelistFlow.value.toMutableSet()
+        if (selectAll) {
+            for (appInfo in appListFlow.value) {
+                if (appInfo.isSystemApp && !whitelistNew.contains(appInfo.packageName)) {
+                    whitelistNew.add(appInfo.packageName)
+
+                    val targetSharedUserId = appInfo.sharedUserId
+                    if (!targetSharedUserId.isNullOrEmpty()) {
+                        sharedUserIdMap[appInfo.packageName] = targetSharedUserId
+                    }
+                }
+            }
+        } else {
+            for (appInfo in appListFlow.value) {
+                if (appInfo.isSystemApp) {
+                    whitelistNew.remove(appInfo.packageName)
+                }
+            }
+        }
+        whitelistFlow.value = whitelistNew
+        showSelectAll.value = selectAll
+        isModified = true
     }
 }

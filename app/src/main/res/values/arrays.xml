@@ -4,5 +4,6 @@
         <item>android</item>
         <item>com.miui.securitycenter</item>
         <item>com.miui.cleanmaster</item>
+        <item>com.android.settings</item>
     </string-array>
 </resources>
